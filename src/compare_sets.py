@@ -14,20 +14,16 @@ logger = logging.getLogger(__name__)
 def generate_matchings(m, n):
 	'''
 	Input: Number of copies of a contig in left and right plasmid sets
-	Returns: List of matchings where each matching is a pair of lists of indices (int) of the contig copies, one for each side.
+	Yields: Matchings, each a pair of lists of indices (int) of the contig copies, one for each side.
 	'''
-	matchings = []
 	if m >= n:
-		pmutns = list(itertools.permutations(list(range(m)), n))
-		n_list = list(range(n))
-		for pmutn in pmutns:
-			matchings.append((list(pmutn), n_list))
+		fixed = list(range(n))
+		for pmutn in itertools.permutations(range(m), n):
+			yield (list(pmutn), fixed)
 	else:
-		pmutns = list(itertools.permutations(list(range(n)), m))
-		m_list = list(range(m))
-		for pmutn in pmutns:
-			matchings.append((m_list, list(pmutn)))
-	return matchings
+		fixed = list(range(m))
+		for pmutn in itertools.permutations(range(n), m):
+			yield (fixed, list(pmutn))
 
 def get_matching_positions(ctg_copies, matching):
 	'''
