@@ -273,8 +273,8 @@ def get_bin_details(len_dict, bins_file):
     """
     pls_ctg_df = pd.read_csv(bins_file, sep="\t")
     pls_dict = {}
-    for _, row in pls_ctg_df.iterrows():
-        plasmid, contig, length = row["plasmid"], str(row["contig"]), row["contig_len"]
+    for row in pls_ctg_df.itertuples(index=False, name=None):
+        plasmid, contig, length = row[0], str(row[1]), row[2]
         len_dict[contig] = length
         if plasmid not in pls_dict:
             pls_dict[plasmid] = []
