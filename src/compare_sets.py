@@ -5,7 +5,7 @@ import copy
 from math import factorial
 
 import logging
-import psutil
+
 import time
 import sys
 
@@ -275,110 +275,86 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 	logger.info(f'Maximum possible matchings: {max_n_matchings}')
 
 	start_time = time.time()
-	dummy_var = 1
-	if dummy_var == 1:
-		### Branch-N-Bound ###
-		current_state = {'level': 0, 'total_cost': 0, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
-		final_state = {'total_cost': max_cost, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
+	### Branch-N-Bound ###
+	current_state = {'level': 0, 'total_cost': 0, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
+	final_state = {'total_cost': max_cost, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
 
-		contig_list = list(common_contigs)
-		sorted_contig_list = sorted(contig_list, key=lambda ctg: n_matchings[ctg])
+	contig_list = list(common_contigs)
+	sorted_contig_list = sorted(contig_list, key=lambda ctg: n_matchings[ctg])
 
-		count = [0]
+	count = [0]
 
-		def recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count):
-			'''
-			Input:
-				Current state dictionary: 
-					level: Distance from root of tree (int)
-					total_cost: Cost of cuts and joins upto this level (int)
-					matching: Nested dictionary with contig ids (str) as keys and a pair (set) of lists of contigs as values
-					cuts_cost, joins_cost: Cost of cuts, joins (respectively) upto this level (int)		
-					unmatched: Nested dictionary with contigs ids (str) as keys and as values, a dictionary with bin ids as keys and number of extra contigs as values 		
-			Updates:
-				Current state dictionary
-				Final state dictionary (non local variable)
-			'''
-			nonlocal final_state
-			if current_state['level'] < len(sorted_contig_list):				#Compute cost upto current level
-				current_contig = sorted_contig_list[current_state['level']]		#Retrieve contig for current level				
-				m = len(contigs_dict[current_contig]['L_copies'])
-				n = len(contigs_dict[current_contig]['R_copies'])			
-				matchings = generate_matchings(m,n)
-				for matching in matchings:
-					matched_posns = get_matching_positions(contigs_dict[current_contig], matching)
-					#matched_posns, unmatched_posns = get_matching_positions(contigs_dict[current_contig], matching)
-					current_state['matching'][current_contig] = matched_posns
-					#current_state['unmatched'][current_contig] = unmatched_posns
-					count[0] += 1
-
-					if count[0] > max_calls:
-						logger.info(f'Max number of iterations reached: {max_calls}'); sys.exit(f'Max number of iterations reached: {max_calls}')
-					current_state['cuts_cost'], current_state['joins_cost'] \
-						= compute_current_cost(current_state['matching'], pls_ids_dict, contigs_dict, p)
-					current_state['total_cost'] = current_state['cuts_cost'] + current_state['joins_cost']
-					if current_state['total_cost'] < final_state['total_cost']:	
-						current_state['level'] += 1 
-						recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
-						current_state['level'] -= 1
-					del current_state['matching'][current_contig]
-
-			else:
-				final_state['total_cost'] = current_state['total_cost']
-				final_state['cuts_cost'], final_state['joins_cost'] = current_state['cuts_cost'], current_state['joins_cost']
-				final_state['matching'] = copy.deepcopy(current_state['matching'])
-		recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
-		
-		end_time = time.time()
-		logger.info(f'Time taken: {end_time - start_time}')
-		logger.info(f'Number of function calls: {count[0]}')	
-		
-		total_len, total_denom, unique_left_cost, unique_right_cost = 0, 0, 0, 0
-		for c in contigs_dict:
-			#if c not in common_contigs:
-			l_copies, r_copies = len(contigs_dict[c]['L_copies']), len(contigs_dict[c]['R_copies'])
-			ctg_len = contigs_dict[c]['length']
-			unique_left_cost += max(l_copies - r_copies, 0) * (ctg_len**p)
-			unique_right_cost += max(r_copies - l_copies, 0) * (ctg_len**p)
-			total_len += (l_copies + r_copies) * ctg_len
-			total_denom += (l_copies + r_copies) * (ctg_len**p)
-
+	def recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count):
 		'''
-		uncommon_copies_per_bin = {}
-		for c in contigs_dict:
-			if c not in common_contigs:
-				uncommon_copies_per_bin[c] = {}
-				l_copies, r_copies = len(contigs_dict[c]['L_copies']), len(contigs_dict[c]['R_copies'])
-				if l_copies > r_copies:
-					for l_copy in contigs_dict[c]['L_copies']:
-						bin_id = l_copy[1]
-						if bin_id not in uncommon_copies_per_bin[c]:
-							uncommon_copies_per_bin[c][bin_id] = 0
-						uncommon_copies_per_bin[c] += 1	
-				else:
-					for r_copy in contigs_dict[c]['R_copies']:
-						bin_id = r_copy[1]
-						if bin_id not in uncommon_copies_per_bin[c]:
-							uncommon_copies_per_bin[c][bin_id] = 0
-						uncommon_copies_per_bin[c] += 1	
+		Input:
+			Current state dictionary: 
+				level: Distance from root of tree (int)
+				total_cost: Cost of cuts and joins upto this level (int)
+				matching: Nested dictionary with contig ids (str) as keys and a pair (set) of lists of contigs as values
+				cuts_cost, joins_cost: Cost of cuts, joins (respectively) upto this level (int)		
+				unmatched: Nested dictionary with contigs ids (str) as keys and as values, a dictionary with bin ids as keys and number of extra contigs as values 		
+		Updates:
+			Current state dictionary
+			Final state dictionary (non local variable)
 		'''
-				
-					
-				 
+		nonlocal final_state
+		if current_state['level'] < len(sorted_contig_list):				#Compute cost upto current level
+			current_contig = sorted_contig_list[current_state['level']]		#Retrieve contig for current level				
+			m = len(contigs_dict[current_contig]['L_copies'])
+			n = len(contigs_dict[current_contig]['R_copies'])			
+			matchings = generate_matchings(m,n)
+			for matching in matchings:
+				matched_posns = get_matching_positions(contigs_dict[current_contig], matching)
+				#matched_posns, unmatched_posns = get_matching_positions(contigs_dict[current_contig], matching)
+				current_state['matching'][current_contig] = matched_posns
+				#current_state['unmatched'][current_contig] = unmatched_posns
+				count[0] += 1
+
+				if count[0] > max_calls:
+					logger.info(f'Max number of iterations reached: {max_calls}'); sys.exit(f'Max number of iterations reached: {max_calls}')
+				current_state['cuts_cost'], current_state['joins_cost'] \
+					= compute_current_cost(current_state['matching'], pls_ids_dict, contigs_dict, p)
+				current_state['total_cost'] = current_state['cuts_cost'] + current_state['joins_cost']
+				if current_state['total_cost'] < final_state['total_cost']:	
+					current_state['level'] += 1 
+					recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
+					current_state['level'] -= 1
+				del current_state['matching'][current_contig]
+
+		else:
+			final_state['total_cost'] = current_state['total_cost']
+			final_state['cuts_cost'], final_state['joins_cost'] = current_state['cuts_cost'], current_state['joins_cost']
+			final_state['matching'] = copy.deepcopy(current_state['matching'])
+	recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
+	
+	end_time = time.time()
+	logger.info(f'Time taken: {end_time - start_time}')
+	logger.info(f'Number of function calls: {count[0]}')	
+	
+	total_len, total_denom, unique_left_cost, unique_right_cost = 0, 0, 0, 0
+	for c in contigs_dict:
+		#if c not in common_contigs:
+		l_copies, r_copies = len(contigs_dict[c]['L_copies']), len(contigs_dict[c]['R_copies'])
+		ctg_len = contigs_dict[c]['length']
+		unique_left_cost += max(l_copies - r_copies, 0) * (ctg_len**p)
+		unique_right_cost += max(r_copies - l_copies, 0) * (ctg_len**p)
+		total_len += (l_copies + r_copies) * ctg_len
+		total_denom += (l_copies + r_copies) * (ctg_len**p)
+ 
 
 
-		dissimilarity_score = (unique_left_cost + unique_right_cost + final_state['total_cost'])
-		logger.info(f'contig\tleft_plasmid_id\tleft_plasmid_position\tright_plasmid_id\tright_plasmid_position')
-		for ctg in final_state["matching"]:
-			n_copies = len(final_state["matching"][ctg][0])
-			for i in range(n_copies):
-				logger.info(f'{ctg}\t{final_state["matching"][ctg][0][i][1]}\t{final_state["matching"][ctg][0][i][2]}\t{final_state["matching"][ctg][1][i][1]}\t{final_state["matching"][ctg][1][i][2]}')
-                
-		if total_denom == 0.0: total_denom = 1.0
-		results_file.write("Total_ctg_length\t" + str(total_len) + "\n")
-		results_file.write("Total_ctg_length_alpha\t" + str(total_denom) + "\n")
-		results_file.write("Cuts\t" + str(final_state['cuts_cost']) + "\t" + str(final_state['cuts_cost']/total_denom) + "\n")
-		results_file.write("Joins\t" + str(final_state['joins_cost']) + "\t" + str(final_state['joins_cost']/total_denom) + "\n")
-		results_file.write("Extra_ctgs\t" + str(unique_left_cost) + "\t" + str(unique_left_cost/total_denom) + "\n")
-		results_file.write("Missing_ctgs\t" + str(unique_right_cost) + "\t" + str(unique_right_cost/total_denom) + "\n")
-		results_file.write("Dissimilarity\t" + str(dissimilarity_score) + "\t" + str(dissimilarity_score/total_denom) + "\n")
+	dissimilarity_score = (unique_left_cost + unique_right_cost + final_state['total_cost'])
+	logger.info(f'contig\tleft_plasmid_id\tleft_plasmid_position\tright_plasmid_id\tright_plasmid_position')
+	for ctg in final_state["matching"]:
+		n_copies = len(final_state["matching"][ctg][0])
+		for i in range(n_copies):
+			logger.info(f'{ctg}\t{final_state["matching"][ctg][0][i][1]}\t{final_state["matching"][ctg][0][i][2]}\t{final_state["matching"][ctg][1][i][1]}\t{final_state["matching"][ctg][1][i][2]}')
+            
+	if total_denom == 0.0: total_denom = 1.0
+	results_file.write("Total_ctg_length\t" + str(total_len) + "\n")
+	results_file.write("Total_ctg_length_alpha\t" + str(total_denom) + "\n")
+	results_file.write("Cuts\t" + str(final_state['cuts_cost']) + "\t" + str(final_state['cuts_cost']/total_denom) + "\n")
+	results_file.write("Joins\t" + str(final_state['joins_cost']) + "\t" + str(final_state['joins_cost']/total_denom) + "\n")
+	results_file.write("Extra_ctgs\t" + str(unique_left_cost) + "\t" + str(unique_left_cost/total_denom) + "\n")
+	results_file.write("Missing_ctgs\t" + str(unique_right_cost) + "\t" + str(unique_right_cost/total_denom) + "\n")
+	results_file.write("Dissimilarity\t" + str(dissimilarity_score) + "\t" + str(dissimilarity_score/total_denom) + "\n")
