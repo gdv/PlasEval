@@ -111,13 +111,13 @@ def add_edges(G, left_ctg_list, right_ctg_list, pls_ids_dict):
 		return ctg_ids_by_pls
 	left_ctg_ids_by_pls = list_ctg_ids_by_pls(pls_ids_dict['L'], left_ctg_list)
 	right_ctg_ids_by_pls = list_ctg_ids_by_pls(pls_ids_dict['R'], right_ctg_list)
-	
+	left_ctg_set_by_pls = {k: set(v) for k, v in left_ctg_ids_by_pls.items()}
+	right_ctg_set_by_pls = {k: set(v) for k, v in right_ctg_ids_by_pls.items()}
+
 	edges_list = []
 	for left_plasmid in left_ctg_ids_by_pls:
 		for right_plasmid in right_ctg_ids_by_pls:
-			left_keys = set(left_ctg_ids_by_pls[left_plasmid])
-			right_keys = set(right_ctg_ids_by_pls[right_plasmid])
-			if left_keys.intersection(right_keys) != set():
+			if left_ctg_set_by_pls[left_plasmid].intersection(right_ctg_set_by_pls[right_plasmid]):
 				edges_list.append((left_plasmid, right_plasmid))
 	G.add_edges_from(edges_list)
 	return G
@@ -187,14 +187,15 @@ def compute_splits_cost(pls_ids, side_contig_copies, opp_contig_copies, B, flag,
 	[s, o] = ['L', 'R'] if flag == 0 else ['R', 'L']
 	side_ctgs_by_pls = get_ctg_list_by_pls(side_contig_copies, pls_ids_dict, s)
 	opp_ctgs_by_pls = get_ctg_list_by_pls(opp_contig_copies, pls_ids_dict, o)
+	side_ctgs_set_by_pls = {k: set(v) for k, v in side_ctgs_by_pls.items()}
+	opp_ctgs_set_by_pls = {k: set(v) for k, v in opp_ctgs_by_pls.items()}
 
 	side_len, side_cost = 0, 0
 	for node in pls_ids:
-		partitions = [set(side_ctgs_by_pls[node])]
+		partitions = [side_ctgs_set_by_pls[node]]
 		for edge in B.edges:
 			if edge[flag] == node:
-				side_contigs, opp_contigs = set(side_ctgs_by_pls[edge[flag]]), set(opp_ctgs_by_pls[edge[1-flag]])
-				common = side_contigs.intersection(opp_contigs)
+				common = side_ctgs_set_by_pls[edge[flag]].intersection(opp_ctgs_set_by_pls[edge[1-flag]])
 				partitions = modify_partitions(partitions, common)
 		node_len, cost = get_partition_cost(partitions, ctg_len, p)
 		side_len += node_len
