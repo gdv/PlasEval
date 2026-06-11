@@ -305,11 +305,12 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 			m = len(contigs_dict[current_contig]['L_copies'])
 			n = len(contigs_dict[current_contig]['R_copies'])			
 			matchings = generate_matchings(m,n)
+			parent_cost = current_state['total_cost']
 			for matching in matchings:
+				if parent_cost >= final_state['total_cost']:
+					break
 				matched_posns = get_matching_positions(contigs_dict[current_contig], matching)
-				#matched_posns, unmatched_posns = get_matching_positions(contigs_dict[current_contig], matching)
 				current_state['matching'][current_contig] = matched_posns
-				#current_state['unmatched'][current_contig] = unmatched_posns
 				count[0] += 1
 
 				if count[0] > max_calls:
