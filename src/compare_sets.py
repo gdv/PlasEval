@@ -1,7 +1,7 @@
 import networkx as nx
 import itertools
 from collections import defaultdict
-import copy
+
 from math import factorial
 
 import logging
@@ -322,7 +322,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 		else:
 			final_state['total_cost'] = current_state['total_cost']
 			final_state['cuts_cost'], final_state['joins_cost'] = current_state['cuts_cost'], current_state['joins_cost']
-			final_state['matching'] = copy.deepcopy(current_state['matching'])
+			final_state['matching'] = {k: (list(v[0]), list(v[1])) for k, v in current_state['matching'].items()}
 	recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
 	
 	end_time = time.time()
