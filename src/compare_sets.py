@@ -1,4 +1,4 @@
-import networkx as nx
+
 import itertools
 from collections import defaultdict
 
@@ -71,47 +71,6 @@ def rename_by_matching(matching_dict, contigs_dict):
 			right_copies_renamed.append([renamed, rpls, ridx])
 	return left_copies_renamed, right_copies_renamed, ctg_len
 
-def add_nodes(G, left_ctg_list, right_ctg_list, pls_ids_dict):
-	'''
-	Input:
-		Empty graph object G
-		List of contig copies in left plasmid set
-		List of contig copies in right plasmid set
-		Dictionary of plasmids: Keys: L, R, Values: Bidict of plasmid indices <-> names/ids
-	Returns:
-		Bipartite graph G (no edges added yet)
-	'''
-	G.add_nodes_from(list(set([pls_ids_dict['L'].inv[x[1]] for x in left_ctg_list])), bipartite=0)
-	G.add_nodes_from(list(set([pls_ids_dict['R'].inv[x[1]] for x in right_ctg_list])), bipartite=1)
-	return G
-
-def add_edges(G, left_ctg_list, right_ctg_list, pls_ids_dict):
-	'''
-	Input:
-		Graph object G with vertices added
-		List of contig copies in left plasmid set
-		List of contig copies in right plasmid set
-		Dictionary of plasmids: Keys: L, R, Values: Bidict of plasmid indices <-> names/ids
-	Returns:
-		Bipartite graph G (with edges added)
-	'''	
-	ctg_to_left_pls = defaultdict(set)
-	for ctg in left_ctg_list:
-		ctg_id, pls_id = ctg[0], pls_ids_dict['L'].inv[ctg[1]]
-		ctg_to_left_pls[ctg_id].add(pls_id)
-	ctg_to_right_pls = defaultdict(set)
-	for ctg in right_ctg_list:
-		ctg_id, pls_id = ctg[0], pls_ids_dict['R'].inv[ctg[1]]
-		ctg_to_right_pls[ctg_id].add(pls_id)
-	edges_set = set()
-	for ctg_id in ctg_to_left_pls:
-		if ctg_id in ctg_to_right_pls:
-			for l_pls in ctg_to_left_pls[ctg_id]:
-				for r_pls in ctg_to_right_pls[ctg_id]:
-					edges_set.add((l_pls, r_pls))
-	G.add_edges_from(edges_set)
-	return G
-
 def modify_partitions(partitions, common):
 	'''
 	Input:
@@ -151,7 +110,7 @@ def get_partition_cost(partitions, ctg_len, p):
 	cost = total_len - largest_part_cost
 	return total_len, cost
 
-def compute_splits_cost(pls_ids, side_contig_copies, opp_contig_copies, B, flag, pls_ids_dict, ctg_len, p):
+def compute_splits_cost(pls_ids, side_contig_copies, opp_contig_copies, adj, flag, pls_ids_dict, ctg_len, p):
 	'''
 	Input:
 		pls_ids: List of plasmid ids,
@@ -183,7 +142,7 @@ def compute_splits_cost(pls_ids, side_contig_copies, opp_contig_copies, B, flag,
 	side_len, side_cost = 0, 0
 	for node in pls_ids:
 		partitions = [side_ctgs_set_by_pls[node]]
-		for neighbor in B.neighbors(node):
+		for neighbor in adj.get(node, set()):
 			common = side_ctgs_set_by_pls[node].intersection(opp_ctgs_set_by_pls[neighbor])
 			partitions = modify_partitions(partitions, common)
 		node_len, cost = get_partition_cost(partitions, ctg_len, p)
@@ -199,22 +158,47 @@ def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ct
 	Returns:
 		Cost of cuts (left side splits) and joins (right side splits)
 	'''
-	B = nx.Graph()	#Create graph with vertices named according to matching and obtain connected components
-	B = add_nodes(B, left_contig_copies, right_contig_copies, pls_ids_dict)
-	B = add_edges(B, left_contig_copies, right_contig_copies, pls_ids_dict)
-	A = [B.subgraph(c) for c in nx.connected_components(B)]
-	left_pls_set = set([pls_ids_dict['L'].inv[x[1]] for x in left_contig_copies])
-	n_conn_comp = len(list(A))
-	left_splits_cost,right_splits_cost = 0, 0
-	for i in range(n_conn_comp):
-		C = list(A)[i]
-		left_pls_ids, right_pls_ids = nx.bipartite.sets(C)		#Split the component according to bipartite sets
-		if len(list(right_pls_ids)) != 0 and list(right_pls_ids)[0] in left_pls_set: 	#Ensuring proper assignments of bipartite parts
-			right_pls_ids,left_pls_ids = left_pls_ids,right_pls_ids
-		left_splits_cost += compute_splits_cost(left_pls_ids, left_contig_copies, right_contig_copies, B, 0, pls_ids_dict, ctg_len, p)
-		right_splits_cost += compute_splits_cost(right_pls_ids, right_contig_copies, left_contig_copies, B, 1, pls_ids_dict, ctg_len, p)
+	adj = defaultdict(set)
+	left_pls_set = set()
+	right_pls_set = set()
+	for x in left_contig_copies:
+		left_pls_set.add(pls_ids_dict['L'].inv[x[1]])
+	for x in right_contig_copies:
+		right_pls_set.add(pls_ids_dict['R'].inv[x[1]])
+	ctg_to_left_pls = defaultdict(set)
+	for ctg in left_contig_copies:
+		ctg_to_left_pls[ctg[0]].add(pls_ids_dict['L'].inv[ctg[1]])
+	ctg_to_right_pls = defaultdict(set)
+	for ctg in right_contig_copies:
+		ctg_to_right_pls[ctg[0]].add(pls_ids_dict['R'].inv[ctg[1]])
+	for ctg_id in ctg_to_left_pls:
+		if ctg_id in ctg_to_right_pls:
+			for l_pls in ctg_to_left_pls[ctg_id]:
+				for r_pls in ctg_to_right_pls[ctg_id]:
+					adj[l_pls].add(r_pls)
+					adj[r_pls].add(l_pls)
+	all_nodes = left_pls_set | right_pls_set
+	visited = set()
+	components = []
+	for start in all_nodes:
+		if start not in visited:
+			stack = [start]
+			comp = set()
+			while stack:
+				v = stack.pop()
+				if v not in visited:
+					visited.add(v)
+					comp.add(v)
+					stack.extend(adj.get(v, set()) - visited)
+			components.append(comp)
+	left_splits_cost, right_splits_cost = 0, 0
+	for comp in components:
+		left_pls_ids = comp & left_pls_set
+		right_pls_ids = comp & right_pls_set
+		left_splits_cost += compute_splits_cost(left_pls_ids, left_contig_copies, right_contig_copies, adj, 0, pls_ids_dict, ctg_len, p)
+		right_splits_cost += compute_splits_cost(right_pls_ids, right_contig_copies, left_contig_copies, adj, 1, pls_ids_dict, ctg_len, p)
+	return left_splits_cost, right_splits_cost
 
-	return left_splits_cost, right_splits_cost	
 
 def compute_current_cost(matching_dict, pls_ids_dict, contigs_dict, p):
 	'''
