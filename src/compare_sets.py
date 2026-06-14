@@ -273,6 +273,12 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 	contig_list = list(common_contigs)
 	sorted_contig_list = sorted(contig_list, key=lambda ctg: n_matchings[ctg])
 
+	precomputed_matchings = {}
+	for contig in common_contigs:
+		m = len(contigs_dict[contig]['L_copies'])
+		n = len(contigs_dict[contig]['R_copies'])
+		precomputed_matchings[contig] = list(generate_matchings(m, n))
+
 	count = [0]
 
 	def recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count):
@@ -289,11 +295,11 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 			Final state dictionary (non local variable)
 		'''
 		nonlocal final_state
+		if current_state['total_cost'] >= final_state['total_cost']:
+			return
 		if current_state['level'] < len(sorted_contig_list):				#Compute cost upto current level
 			current_contig = sorted_contig_list[current_state['level']]		#Retrieve contig for current level				
-			m = len(contigs_dict[current_contig]['L_copies'])
-			n = len(contigs_dict[current_contig]['R_copies'])			
-			matchings = generate_matchings(m,n)
+			matchings = precomputed_matchings[current_contig]
 			parent_cost = current_state['total_cost']
 			for matching in matchings:
 				if parent_cost >= final_state['total_cost']:
