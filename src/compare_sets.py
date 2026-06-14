@@ -110,43 +110,25 @@ def get_partition_cost(partitions, ctg_len, p):
 	cost = total_len - largest_part_cost
 	return total_len, cost
 
-def compute_splits_cost(pls_ids, side_contig_copies, opp_contig_copies, adj, flag, pls_ids_dict, ctg_len, p):
+def compute_splits_cost(pls_ids, adj, side_ctgs_set_by_pls, opp_ctgs_set_by_pls, ctg_len, p):
 	'''
 	Input:
 		pls_ids: List of plasmid ids,
-		side_contig_copies: list of contig copies in plasmid set
-		opp_contig_copies: list of contig copies in opposite plasmid set
-		B: bipartite graph object
-		flag (binary): variable to indicate if side is left (0) or right (1)
-		Dictionaries of plasmids and contigs
+		adj: adjacency dict (plasmid -> set of neighboring plasmids)
+		side_ctgs_set_by_pls: precomputed dict plasmid -> set of contig copies on the side
+		opp_ctgs_set_by_pls: precomputed dict plasmid -> set of contig copies on the opposite side
+		ctg_len: dict mapping renamed contig name to its length
+		p: exponent for cost computation
 	Returns:
 		Total cost of splits (cuts OR joins) for one plasmid set
 	'''
-	def get_ctg_list_by_pls(contig_copies, pls_ids_dict, side):
-		'''
-		Returns list of contigs for each plasmid
-		'''
-		ctgs_by_pls = {}
-		for x in contig_copies:
-			ctg, pls = x[0], pls_ids_dict[side].inv[x[1]]
-			if pls not in ctgs_by_pls:
-				ctgs_by_pls[pls] = []
-			ctgs_by_pls[pls].append(ctg)
-		return ctgs_by_pls
-	[s, o] = ['L', 'R'] if flag == 0 else ['R', 'L']
-	side_ctgs_by_pls = get_ctg_list_by_pls(side_contig_copies, pls_ids_dict, s)
-	opp_ctgs_by_pls = get_ctg_list_by_pls(opp_contig_copies, pls_ids_dict, o)
-	side_ctgs_set_by_pls = {k: set(v) for k, v in side_ctgs_by_pls.items()}
-	opp_ctgs_set_by_pls = {k: set(v) for k, v in opp_ctgs_by_pls.items()}
-
-	side_len, side_cost = 0, 0
+	side_cost = 0
 	for node in pls_ids:
 		partitions = [side_ctgs_set_by_pls[node]]
 		for neighbor in adj.get(node, set()):
 			common = side_ctgs_set_by_pls[node].intersection(opp_ctgs_set_by_pls[neighbor])
 			partitions = modify_partitions(partitions, common)
-		node_len, cost = get_partition_cost(partitions, ctg_len, p)
-		side_len += node_len
+		_, cost = get_partition_cost(partitions, ctg_len, p)
 		side_cost += cost
 	return side_cost
 
@@ -192,11 +174,17 @@ def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ct
 					stack.extend(adj.get(v, set()) - visited)
 			components.append(comp)
 	left_splits_cost, right_splits_cost = 0, 0
+	left_ctgs_set_by_pls = defaultdict(set)
+	for x in left_contig_copies:
+		left_ctgs_set_by_pls[pls_ids_dict['L'].inv[x[1]]].add(x[0])
+	right_ctgs_set_by_pls = defaultdict(set)
+	for x in right_contig_copies:
+		right_ctgs_set_by_pls[pls_ids_dict['R'].inv[x[1]]].add(x[0])
 	for comp in components:
 		left_pls_ids = comp & left_pls_set
 		right_pls_ids = comp & right_pls_set
-		left_splits_cost += compute_splits_cost(left_pls_ids, left_contig_copies, right_contig_copies, adj, 0, pls_ids_dict, ctg_len, p)
-		right_splits_cost += compute_splits_cost(right_pls_ids, right_contig_copies, left_contig_copies, adj, 1, pls_ids_dict, ctg_len, p)
+		left_splits_cost += compute_splits_cost(left_pls_ids, adj, left_ctgs_set_by_pls, right_ctgs_set_by_pls, ctg_len, p)
+		right_splits_cost += compute_splits_cost(right_pls_ids, adj, right_ctgs_set_by_pls, left_ctgs_set_by_pls, ctg_len, p)
 	return left_splits_cost, right_splits_cost
 
 
@@ -252,7 +240,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 	start_time = time.time()
 	### Branch-N-Bound ###
 	current_state = {'level': 0, 'total_cost': 0, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
-	final_state = {'total_cost': max_cost, 'matching': {}, 'cuts_cost': 0, 'joins_cost': 0, 'unmatched': {}}
+
 
 	contig_list = list(common_contigs)
 	sorted_contig_list = sorted(contig_list, key=lambda ctg: n_matchings[ctg])
@@ -262,6 +250,27 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 		m = len(contigs_dict[contig]['L_copies'])
 		n = len(contigs_dict[contig]['R_copies'])
 		precomputed_matchings[contig] = list(generate_matchings(m, n))
+
+	# Greedy initial solution
+	greedy_matching = {}
+	best_cost = 0
+	best_cuts = best_joins = 0
+	for contig in sorted_contig_list:
+		best_matching = None
+		best_cost = float('inf')
+		for matching in precomputed_matchings[contig]:
+			matched_posns = get_matching_positions(contigs_dict[contig], matching)
+			greedy_matching[contig] = matched_posns
+			cuts, joins = compute_current_cost(greedy_matching, pls_ids_dict, contigs_dict, p)
+			total = cuts + joins
+			if total < best_cost:
+				best_cost = total
+				best_matching = matched_posns
+				best_cuts, best_joins = cuts, joins
+			del greedy_matching[contig]
+		greedy_matching[contig] = best_matching
+	logger.info(f'Greedy initial bound: {best_cost}')
+	final_state = {'total_cost': best_cost, 'matching': greedy_matching, 'cuts_cost': best_cuts, 'joins_cost': best_joins, 'unmatched': {}}
 
 	count = [0]
 
