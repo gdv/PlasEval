@@ -81,10 +81,10 @@ def modify_partitions(partitions, common):
 	'''
 	modified_partitions = []
 	for S in partitions:
-		if len(S.intersection(common)) != 0 or S.intersection(common) != S:
+		if S.intersection(common) != S:
 			modified_partitions.append(S.intersection(common))
 			modified_partitions.append(S.difference(common))
-		elif S.intersection(common) == S:
+		else:
 			modified_partitions.append(S)	
 	return modified_partitions		
 
@@ -132,7 +132,7 @@ def compute_splits_cost(pls_ids, adj, side_ctgs_set_by_pls, opp_ctgs_set_by_pls,
 		side_cost += cost
 	return side_cost
 
-def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ctg_len, p):
+def compute_match_cost(left_contig_copies, right_contig_copies, pls_inv, ctg_len, p):
 	'''
 	Input:
 		List of contig copies, one for each side
@@ -143,16 +143,18 @@ def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ct
 	adj = defaultdict(set)
 	left_pls_set = set()
 	right_pls_set = set()
+	L_inv = pls_inv['L']
+	R_inv = pls_inv['R']
 	for x in left_contig_copies:
-		left_pls_set.add(pls_ids_dict['L'].inv[x[1]])
+		left_pls_set.add(L_inv[x[1]])
 	for x in right_contig_copies:
-		right_pls_set.add(pls_ids_dict['R'].inv[x[1]])
+		right_pls_set.add(R_inv[x[1]])
 	ctg_to_left_pls = defaultdict(set)
 	for ctg in left_contig_copies:
-		ctg_to_left_pls[ctg[0]].add(pls_ids_dict['L'].inv[ctg[1]])
+		ctg_to_left_pls[ctg[0]].add(L_inv[ctg[1]])
 	ctg_to_right_pls = defaultdict(set)
 	for ctg in right_contig_copies:
-		ctg_to_right_pls[ctg[0]].add(pls_ids_dict['R'].inv[ctg[1]])
+		ctg_to_right_pls[ctg[0]].add(R_inv[ctg[1]])
 	for ctg_id in ctg_to_left_pls:
 		if ctg_id in ctg_to_right_pls:
 			for l_pls in ctg_to_left_pls[ctg_id]:
@@ -176,10 +178,10 @@ def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ct
 	left_splits_cost, right_splits_cost = 0, 0
 	left_ctgs_set_by_pls = defaultdict(set)
 	for x in left_contig_copies:
-		left_ctgs_set_by_pls[pls_ids_dict['L'].inv[x[1]]].add(x[0])
+		left_ctgs_set_by_pls[L_inv[x[1]]].add(x[0])
 	right_ctgs_set_by_pls = defaultdict(set)
 	for x in right_contig_copies:
-		right_ctgs_set_by_pls[pls_ids_dict['R'].inv[x[1]]].add(x[0])
+		right_ctgs_set_by_pls[R_inv[x[1]]].add(x[0])
 	for comp in components:
 		left_pls_ids = comp & left_pls_set
 		right_pls_ids = comp & right_pls_set
@@ -188,23 +190,18 @@ def compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ct
 	return left_splits_cost, right_splits_cost
 
 
-def compute_current_cost(matching_dict, pls_ids_dict, contigs_dict, p):
+def compute_current_cost(matching_dict, pls_inv, contigs_dict, p):
 	'''
 	Input:
 		Dictionary of matchings: Key: contig, Value: matching for copies of contig,
-		Dictionary of plasmids: Keys: side (L/R), Values: Bidict of plasmid indices <-> names/ids
-		Dictionary of contigs: Key: contig (str), Value: Nested dictionary: length (int), 
-																			L_copies/R_copies (list of contig copies in plasmid set)
+		pls_inv: dict with keys L/R, values are plain dict mapping plasmid index -> plasmid name
+		Dictionary of contigs: Key: contig (str), Value: Nested dictionary: length (int),
+																	L_copies/R_copies (list of contig copies in plasmid set)
 	Returns:
 		Cost of current matching
-	'''	
+	'''
 	left_contig_copies, right_contig_copies, ctg_len = rename_by_matching(matching_dict, contigs_dict)
-	left_ctg_ids, right_ctg_ids = set(), set()
-	for x in left_contig_copies:
-		left_ctg_ids.add(x[0])
-	for x in right_contig_copies:
-		right_ctg_ids.add(x[0])
-	return compute_match_cost(left_contig_copies, right_contig_copies, pls_ids_dict, ctg_len, p)
+	return compute_match_cost(left_contig_copies, right_contig_copies, pls_inv, ctg_len, p)
 
 def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file):
 	'''
@@ -219,6 +216,13 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 	Returns:
 		Dissimilarity score and associated costs (cuts, joins, contig copies present on only left or right plasmid sets)
 	'''
+	# Precompute inverse plasmid mapping (plain dict avoids bidict overhead in hot loops)
+	pls_inv = {
+		'L': {v: k for k, v in pls_ids_dict['L'].items()},
+		'R': {v: k for k, v in pls_ids_dict['R'].items()},
+	}
+	# Precompute length**p for uniqueness cost loop
+	ctg_len_pow = {c: contigs_dict[c]['length']**p for c in contigs_dict}
 	#Computing set of common contigs 
 	left_ctg_ids = set([ctg for ctg in contigs_dict.keys() if len(contigs_dict[ctg]['L_copies']) >= 1])
 	right_ctg_ids = set([ctg for ctg in contigs_dict.keys() if len(contigs_dict[ctg]['R_copies']) >= 1])
@@ -261,7 +265,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 		for matching in precomputed_matchings[contig]:
 			matched_posns = get_matching_positions(contigs_dict[contig], matching)
 			greedy_matching[contig] = matched_posns
-			cuts, joins = compute_current_cost(greedy_matching, pls_ids_dict, contigs_dict, p)
+			cuts, joins = compute_current_cost(greedy_matching, pls_inv, contigs_dict, p)
 			total = cuts + joins
 			if total < best_cost:
 				best_cost = total
@@ -274,7 +278,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 
 	count = [0]
 
-	def recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count):
+	def recursive_compare(current_state, sorted_contig_list, pls_inv, contigs_dict, count):
 		'''
 		Input:
 			Current state dictionary: 
@@ -304,11 +308,11 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 				if count[0] > max_calls:
 					logger.info(f'Max number of iterations reached: {max_calls}'); sys.exit(f'Max number of iterations reached: {max_calls}')
 				current_state['cuts_cost'], current_state['joins_cost'] \
-					= compute_current_cost(current_state['matching'], pls_ids_dict, contigs_dict, p)
+					= compute_current_cost(current_state['matching'], pls_inv, contigs_dict, p)
 				current_state['total_cost'] = current_state['cuts_cost'] + current_state['joins_cost']
 				if current_state['total_cost'] < final_state['total_cost']:	
 					current_state['level'] += 1 
-					recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
+					recursive_compare(current_state, sorted_contig_list, pls_inv, contigs_dict, count)
 					current_state['level'] -= 1
 				del current_state['matching'][current_contig]
 
@@ -316,7 +320,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 			final_state['total_cost'] = current_state['total_cost']
 			final_state['cuts_cost'], final_state['joins_cost'] = current_state['cuts_cost'], current_state['joins_cost']
 			final_state['matching'] = {k: (list(v[0]), list(v[1])) for k, v in current_state['matching'].items()}
-	recursive_compare(current_state, sorted_contig_list, pls_ids_dict, contigs_dict, count)
+	recursive_compare(current_state, sorted_contig_list, pls_inv, contigs_dict, count)
 	
 	end_time = time.time()
 	logger.info(f'Time taken: {end_time - start_time}')
@@ -327,10 +331,11 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 		#if c not in common_contigs:
 		l_copies, r_copies = len(contigs_dict[c]['L_copies']), len(contigs_dict[c]['R_copies'])
 		ctg_len = contigs_dict[c]['length']
-		unique_left_cost += max(l_copies - r_copies, 0) * (ctg_len**p)
-		unique_right_cost += max(r_copies - l_copies, 0) * (ctg_len**p)
+		len_pow = ctg_len_pow[c]
+		unique_left_cost += max(l_copies - r_copies, 0) * len_pow
+		unique_right_cost += max(r_copies - l_copies, 0) * len_pow
 		total_len += (l_copies + r_copies) * ctg_len
-		total_denom += (l_copies + r_copies) * (ctg_len**p)
+		total_denom += (l_copies + r_copies) * len_pow
  
 
 
