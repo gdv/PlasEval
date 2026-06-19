@@ -86,7 +86,7 @@ If a contig appears in several copies in a plasmid bin, the evaluation mode only
 
 In both evaluation and comparison mode, PlasEval takes an extra optional parameter `min_len`: every contig of length below the value `min_len` is discarded from both sets of considered plasmid bins. This parameter is useful in comparison mode in the case of plasmid bins sets that contain many short repeated contigs, which can result in the branch-and-bound algorithm taking a long time to complete.
 
-The comparison mode uses two more parameters. Firstly, the value of $\alpha$ can be passed as a parameter `p`, although by default it takes value $0.5$. Secondly, the maximum number of recursive calls used in the branch and bound can also be set by the user. If the number of recursive calls is exceeded, the comparison is stopped. In such instances, the comparison mode can be rerun with a higher length threshold. The default value for the maximum number of recursive calls (`max_calls`) is $10000000$.
+The comparison mode uses one more parameter: the value of $\alpha$ can be passed as a parameter `p`, although by default it takes value $0.5$. The branch-and-bound search always runs to completion; there is no iteration limit.
 
 ### Runing `eval` or `comp` modes
 
@@ -102,10 +102,10 @@ The comparison mode uses two more parameters. Firstly, the value of $\alpha$ can
 The following command is used for the comparison mode:
 
    ```sh
-   python plaseval.py comp --l LEFT_BINS_TSV --r RIGHT_BINS_TSV --out_file OUT_FILE --log_file LOG_FILE (--min_len LEN_THRESHOLD --p ALPHA --max_calls MAX_RECURSIVE_CALLS)
+   python plaseval.py comp --l LEFT_BINS_TSV --r RIGHT_BINS_TSV --out_file OUT_FILE --log_file LOG_FILE (--min_len LEN_THRESHOLD --p ALPHA)
    ```
 
-   Where `LEFT_BINS_TSV` and `RIGHT_BINS_TSV` are TSV files, each with one set of plasmid bins. `out_file` is the path to the output file while `log_file` is the path to the log file. The parameters `min_len`, `p` and `max_calls` are optional.
+   Where `LEFT_BINS_TSV` and `RIGHT_BINS_TSV` are TSV files, each with one set of plasmid bins. `out_file` is the path to the output file while `log_file` is the path to the log file. The parameters `min_len` and `p` are optional.
 
 ### Output
 

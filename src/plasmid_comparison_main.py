@@ -61,7 +61,7 @@ def comp_mode(
     right_plasmids_file,
     p,
     min_len,
-    max_calls,
+
     output_file: Path,
     log_file: Path,
 ):
@@ -103,6 +103,6 @@ def comp_mode(
         contigs_dict,
         pls_ids_dict,
         p,
-        max_calls,
+
         results_file,
     )

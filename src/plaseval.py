@@ -42,12 +42,7 @@ def main() -> None:
         default=0,
         help="Minimum length of contigs",
     )
-    comp_parser.add_argument(
-        "--max_calls",
-        type=int,
-        default=10000000,
-        help="Maximum number of recursive function calls",
-    )
+
     comp_parser.add_argument("--out_file", help="Path to output file")
     comp_parser.add_argument("--log_file", help="Path to log file")
     args = parser.parse_args()
@@ -66,7 +61,7 @@ def main() -> None:
             args.r,
             args.p,
             args.min_len,
-            args.max_calls,
+
             Path(args.out_file),
             Path(args.log_file),
         )

@@ -7,7 +7,7 @@ from math import factorial
 import logging
 
 import time
-import sys
+
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +203,7 @@ def compute_current_cost(matching_dict, pls_inv, contigs_dict, p):
 	left_contig_copies, right_contig_copies, ctg_len = rename_by_matching(matching_dict, contigs_dict)
 	return compute_match_cost(left_contig_copies, right_contig_copies, pls_inv, ctg_len, p)
 
-def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file):
+def run_compare_plasmids(contigs_dict, pls_ids_dict, p, results_file):
 	'''
 	Input:
 		Dictionary of contigs: 
@@ -305,8 +305,7 @@ def run_compare_plasmids(contigs_dict, pls_ids_dict, p, max_calls, results_file)
 				current_state['matching'][current_contig] = matched_posns
 				count[0] += 1
 
-				if count[0] > max_calls:
-					logger.info(f'Max number of iterations reached: {max_calls}'); sys.exit(f'Max number of iterations reached: {max_calls}')
+
 				current_state['cuts_cost'], current_state['joins_cost'] \
 					= compute_current_cost(current_state['matching'], pls_inv, contigs_dict, p)
 				current_state['total_cost'] = current_state['cuts_cost'] + current_state['joins_cost']
