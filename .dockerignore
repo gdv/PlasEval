@@ -1,0 +1,8 @@
+src/.pixi
+__pycache__/
+*.pyc
+*.pyo
+.git/
+*.md
+*.sh
+test_cases/

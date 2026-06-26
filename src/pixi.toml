@@ -1,0 +1,16 @@
+[workspace]
+authors = ["Gianluca Della Vedova <gianluca@dellavedova.org>"]
+channels = ["conda-forge", "bioconda"]
+name = "src"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+plaseval = "python plaseval.py"
+test = "python -m pytest ../tests/ -v"
+
+[dependencies]
+pandas = ">=3.0.3,<4"
+networkx = ">=3.6.1,<4"
+bidict = ">=0.23.1,<0.24"
+pytest = ">=8,<9"

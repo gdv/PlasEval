@@ -12,10 +12,10 @@ The result of applying a plasmid binning method to a draft assembly is a set of 
 
 ### Evaluation
 
-In the **evaluation** mode of PlasEval, given a set of *predicted plasmid bins* resulting from a plasmid binning tools and a *ground truth* set of plasmid bins, where each true plasmid bin contains all the contigs that belong to one of the plasmid present in the sequenced isolate, PlasEval computes three statistics, the *precision*, the *recall* and the *F1-score* of the predicted plasmid bins with respect to the ground truth.
+In the **evaluation** mode of PlasEval, given a set of _predicted plasmid bins_ resulting from a plasmid binning tools and a _ground truth_ set of plasmid bins, where each true plasmid bin contains all the contigs that belong to one of the plasmid present in the sequenced isolate, PlasEval computes three statistics, the _precision_, the _recall_ and the _F1-score_ of the predicted plasmid bins with respect to the ground truth.
 
 For a group $`X`$ of contigs, we denote by $`L(X)`$ the cumulated length of the contigs in $`X`$.
-For a predicted plasmid bin $`P`$ and a ground truth plasmid bin $`T`$, we define the *overlap* between $`P`$ and $`T`$, denoted by $`o(P,T)`$, as the cumulated length of the contigs presents in both $`P`$ and $`T`$.
+For a predicted plasmid bin $`P`$ and a ground truth plasmid bin $`T`$, we define the _overlap_ between $`P`$ and $`T`$, denoted by $`o(P,T)`$, as the cumulated length of the contigs presents in both $`P`$ and $`T`$.
 Given a set $`A`$ of predicted plasmid bins and a set $`B`$ of ground truth plasmid bins, we define the precision $`p(A,B)`$ and recall $`r(A,B)`$ as follows:
 
 ```math
@@ -30,27 +30,27 @@ F_1(A,B) = 2\frac{{p}(A,B){r}(A,B)}{{p}(A,B)+{r}(A,B)}.
 
 ### Comparison
 
-In the **comparison** mode of PlasEval, given two sets of *predicted plasmid bins* (either resulting from two plasmid binning tools or from a plasmid binning tool and a ground truth), PlasEval computes three statistics, PlasEval computes a *dissimilarity measure* that indictaes how much both sets of predicted plasmid bins are in agreement.
-The full details of the dissimilarity measure computed by PlasEval are available in the preprint *[PlasEval: a framework for comparing and evaluating plasmid binning tools](https://link.springer.com/article/10.1186/s12859-024-05941-0)* and we describe below its general principle.
+In the **comparison** mode of PlasEval, given two sets of _predicted plasmid bins_ (either resulting from two plasmid binning tools or from a plasmid binning tool and a ground truth), PlasEval computes three statistics, PlasEval computes a _dissimilarity measure_ that indictaes how much both sets of predicted plasmid bins are in agreement.
+The full details of the dissimilarity measure computed by PlasEval are available in the preprint _[PlasEval: a framework for comparing and evaluating plasmid binning tools](https://link.springer.com/article/10.1186/s12859-024-05941-0)_ and we describe below its general principle.
 The dissimilariy value is the sum of 4 terms accounting respectively for
 
-- *extra contigs*: the contigs present in $`A`$ but not in $`B`$;
-- *missing contigs*: the contigs present in $`B`$ but not in $`A`$;
-- *splits*: splitting of the plasmid bins of $`A`$ to obtain a set of intermediate bins defined as the intersection of $`A`$ and $`B`$;
-- *joins*: joining the splitted plasmid bins into the plasmid bins of $`B`$.
+- _extra contigs_: the contigs present in $`A`$ but not in $`B`$;
+- _missing contigs_: the contigs present in $`B`$ but not in $`A`$;
+- _splits_: splitting of the plasmid bins of $`A`$ to obtain a set of intermediate bins defined as the intersection of $`A`$ and $`B`$;
+- _joins_: joining the splitted plasmid bins into the plasmid bins of $`B`$.
 
-Each of these components incur a *cost*, parameterized by a parameter $`\alpha \in [0,1]`$:
+Each of these components incur a _cost_, parameterized by a parameter $`\alpha \in [0,1]`$:
 
 - each extra or missing contig $`c`$ results in a cost $`\ell(c)^\alpha`$, where $`\ell(c)`$ is the length of $`c`$;
 - each split of a plasmid bin $`P`$ into two smaller bins $`P',P''`$ results in a cost $`\min(L(P')^\alpha,L(P'')^\alpha)`$;
-- each join of two intermediate plasmid bins $`P',P''`$ into  larger bin $`P`$ results in a cost $`\min(L(P')^\alpha,L(P'')^\alpha)`$.
+- each join of two intermediate plasmid bins $`P',P''`$ into larger bin $`P`$ results in a cost $`\min(L(P')^\alpha,L(P'')^\alpha)`$.
 
 So with $`\alpha=0`$, the length of contigs is not accounted for and only set-theoretic operations define the dissimilarity value, while with $`\alpha=1`$ it is fully accounted for.
 By default $`\alpha=0.5`$.
 
-In the case where some contigs are *repeated*, i.e. a contig appears in more than one plasmid bin of $`A`$ and/or $`B`$, a *branch-and-bound* algorithm computes the pairing between repeats contigs in $`A`$ and in $`B`$ that results in the minimum dissimilarity value.
+In the case where some contigs are _repeated_, i.e. a contig appears in more than one plasmid bin of $`A`$ and/or $`B`$, a _branch-and-bound_ algorithm computes the pairing between repeats contigs in $`A`$ and in $`B`$ that results in the minimum dissimilarity value.
 
-Finally the dissimilarity obtained as described above is *normalized* into a value in $`[0,1]`$ by dividing it by
+Finally the dissimilarity obtained as described above is _normalized_ into a value in $`[0,1]`$ by dividing it by
 
 ```math
 \sum\limits_{P\in A}\sum\limits_{c\in P} \ell(c)^{\alpha} + \sum\limits_{Q\in B}\sum\limits_{c\in Q} \ell(c)^{\alpha}.
@@ -60,6 +60,42 @@ Finally the dissimilarity obtained as described above is *normalized* into a val
 
 ```sh
 pip install -r requirements.txt
+```
+
+### Docker
+
+To build the image (unnecessary if you can download it from quay)
+
+```sh
+docker build -t plaseval .
+```
+
+Run with a bind mount to exchange input/output data with the host. The example below mounts the `examples/` directory at `/data` inside the container and runs the evaluation mode:
+
+```sh
+podman run -v $(pwd)/examples:/data:U -it plaseval:latest \
+  pixi run python3 plaseval.py eval --pred /data/input/pred_bins_1.tsv \
+       --gt /data/input/gt_bins_1.tsv \
+       --out_file /data/output/P1G1_eval.out \
+       --log_file /data/output/P1G1_eval.log
+```
+
+### Apptainer / Singularity
+
+Build the SIF image:
+
+```sh
+apptainer build PlasEval.sif PlasEval.def
+```
+
+Run with a bind mount, same pattern as Docker:
+
+```sh
+apptainer run --bind examples:/data PlasEval.sif \
+  eval --pred /data/input/pred_bins_1.tsv \
+       --gt /data/input/gt_bins_1.tsv \
+       --out_file /data/output/P1G1_eval.out \
+       --log_file /data/output/P1G1_eval.log
 ```
 
 ## Usage
@@ -99,7 +135,7 @@ The comparison mode uses one more parameter: the value of $\alpha$ can be passed
    Where `pred` and `gt` are TSV files, with the set of predicted and ground truth plasmid bins respecitvely. `out_file` is the path to the output file. The integer length threshold `min_len` can be provided as an optional parameter.
 
 2. In addition to the two plasmid bin files, the comparison mode also takes the path to the log file as input.
-The following command is used for the comparison mode:
+   The following command is used for the comparison mode:
 
    ```sh
    python plaseval.py comp --l LEFT_BINS_TSV --r RIGHT_BINS_TSV --out_file OUT_FILE --log_file LOG_FILE (--min_len LEN_THRESHOLD --p ALPHA)

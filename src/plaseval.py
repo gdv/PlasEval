@@ -55,7 +55,7 @@ def main() -> None:
             Path(args.out_file),
             Path(args.log_file),
         )
-    if args.mode == "comp":
+    elif args.mode == "comp":
         pcm.comp_mode(
             args.l,
             args.r,

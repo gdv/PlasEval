@@ -1,4 +1,4 @@
-networkx<3.4
+# Legacy — use pixi.toml as canonical dependency source
+networkx<4
 pandas<4.0
 bidict<1.0
-psutil<7.0
