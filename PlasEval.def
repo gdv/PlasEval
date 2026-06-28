@@ -1,0 +1,41 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%files
+    src/pixi.toml /opt/plaseval/pixi.toml
+    src/pixi.lock /opt/plaseval/pixi.lock
+    src/*.py /opt/plaseval/
+
+%post
+    apt-get update
+    apt-get install -y --no-install-recommends curl ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    PIXI_VERSION=v0.41.1
+    PIXI_SHA256=ac50898f266be6e7f29b82649e578855dafb031921f8ae768252f0792d47b3a3
+    curl -fsSL "https://github.com/prefix-dev/pixi/releases/download/${PIXI_VERSION}/pixi-x86_64-unknown-linux-musl.tar.gz" \
+        -o /tmp/pixi.tar.gz
+    echo "${PIXI_SHA256}  /tmp/pixi.tar.gz" | sha256sum -c
+    tar -xzf /tmp/pixi.tar.gz -C /usr/local/bin
+    rm /tmp/pixi.tar.gz
+    pixi --version
+
+    cd /opt/plaseval
+
+    pixi install --frozen
+
+%environment
+    export PIXI_HOME=/opt/plaseval
+
+%runscript
+    exec pixi run --manifest-path /opt/plaseval/pixi.toml plaseval "$@"
+
+%labels
+    Author Gianluca Della Vedova <gianluca@dellavedova.org>
+    Version 0.1.0
+    Description PlasEval — plasmid binning evaluation and comparison tool
+
+%help
+    PlasEval CLI. Usage:
+      apptainer run PlasEval.sif eval --pred <pred> --gt <gt> --out_file <out> --log_file <log>
+      apptainer run PlasEval.sif comp --l <left> --r <right> --out_file <out> --log_file <log>

@@ -1,5 +1,4 @@
-# Stage 1: build pixi environment with all dependencies (network allowed)
-FROM ghcr.io/prefix-dev/pixi:0.71.1 AS build
+FROM ghcr.io/prefix-dev/pixi:0.71.1
 
 COPY src /app
 WORKDIR /app
