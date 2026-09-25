@@ -2,64 +2,39 @@
 
 PlasEval is a tool aimed at evaluating the accuracy and at comparing methods for the problem of **plasmid binning**.
 
-## Plasmid binning
+**Table of content:**
 
-Plasmid binning aims at detecting, from the draft assembly of a single isolate bacterial pathogen, groups of contigs assumed eachto originate from a plasmid present in the sequenced isolate. Recent methods for plasmid binning include [PlasBin-Flow](https://github.com/cchauve/PlasBin-flow), [MOB-recon](https://github.com/phac-nml/mob-suite) and [gplas](https://gitlab.com/sirarredondo/gplas).
+* [Background: plasmid binning](#background-plasmid-binning)
+* [Installation](#installation)
+   * [Via pip](#via-pip)
+   * [Docker](#docker)
+   * [Apptainer / Singularity](#apptainer--singularity)
+* [Input: collection of plasmid bins](#input-collection-of-plasmid-bins)
+* [Computing recall, precision and F1 scores (`eval` subcommand)](#computing-recall-precision-and-f1-scores-eval-subcommand)
+   * [Usage](#usage)
+   * [Options](#options)
+   * [Output](#output)
+* [Computing dissimilarity measure (`comp` subcommand)](#computing-dissimilarity-measure-comp-subcommand)
+   * [Usage](#usage-1)
+   * [Options](#options-1)
+   * [Output](#output-1)
+   * [Technical notes](#technical-notes)
+* [Example](#example)
+* [Reference](#reference)
 
-The result of applying a plasmid binning method to a draft assembly is a set of unordered groups of contigs, called **plasmid bins**.
+## Background: plasmid binning
 
-## Plasmid binning evaluation and comparison
+Plasmid binning aims at detecting, from the draft assembly of a single isolate bacterial pathogen, groups of contigs assumed each to originate from a plasmid present in the sequenced isolate. Recent methods for plasmid binning include [PlasBin-Flow](https://github.com/cchauve/PlasBin-flow), [MOB-recon](https://github.com/phac-nml/mob-suite) and [gplas](https://gitlab.com/sirarredondo/gplas).
 
-### Evaluation
-
-In the **evaluation** mode of PlasEval, given a set of _predicted plasmid bins_ resulting from a plasmid binning tools and a _ground truth_ set of plasmid bins, where each true plasmid bin contains all the contigs that belong to one of the plasmid present in the sequenced isolate, PlasEval computes three statistics, the _precision_, the _recall_ and the _F1-score_ of the predicted plasmid bins with respect to the ground truth.
-
-For a group $`X`$ of contigs, we denote by $`L(X)`$ the cumulated length of the contigs in $`X`$.
-For a predicted plasmid bin $`P`$ and a ground truth plasmid bin $`T`$, we define the _overlap_ between $`P`$ and $`T`$, denoted by $`o(P,T)`$, as the cumulated length of the contigs presents in both $`P`$ and $`T`$.
-Given a set $`A`$ of predicted plasmid bins and a set $`B`$ of ground truth plasmid bins, we define the precision $`p(A,B)`$ and recall $`r(A,B)`$ as follows:
-
-```math
-p(A,B) = \frac{\sum\limits_{P\in A} \max\limits_{T\in B} o(P,T)}{\sum\limits_{P\in A}L(P)}, r(A,B) = \frac{\sum\limits_{T\in B} \max\limits_{P\in A} o(P,T)}{\sum\limits_{T\in B}L(T)}.
-```
-
-The F1-score is the arithmetic mean of the precision and recall
-
-```math
-F_1(A,B) = 2\frac{{p}(A,B){r}(A,B)}{{p}(A,B)+{r}(A,B)}.
-```
-
-### Comparison
-
-In the **comparison** mode of PlasEval, given two sets of _predicted plasmid bins_ (either resulting from two plasmid binning tools or from a plasmid binning tool and a ground truth), PlasEval computes three statistics, PlasEval computes a _dissimilarity measure_ that indictaes how much both sets of predicted plasmid bins are in agreement.
-The full details of the dissimilarity measure computed by PlasEval are available in the preprint _[PlasEval: a framework for comparing and evaluating plasmid binning tools](https://link.springer.com/article/10.1186/s12859-024-05941-0)_ and we describe below its general principle.
-The dissimilariy value is the sum of 4 terms accounting respectively for
-
-- _extra contigs_: the contigs present in $`A`$ but not in $`B`$;
-- _missing contigs_: the contigs present in $`B`$ but not in $`A`$;
-- _splits_: splitting of the plasmid bins of $`A`$ to obtain a set of intermediate bins defined as the intersection of $`A`$ and $`B`$;
-- _joins_: joining the splitted plasmid bins into the plasmid bins of $`B`$.
-
-Each of these components incur a _cost_, parameterized by a parameter $`\alpha \in [0,1]`$:
-
-- each extra or missing contig $`c`$ results in a cost $`\ell(c)^\alpha`$, where $`\ell(c)`$ is the length of $`c`$;
-- each split of a plasmid bin $`P`$ into two smaller bins $`P',P''`$ results in a cost $`\min(L(P')^\alpha,L(P'')^\alpha)`$;
-- each join of two intermediate plasmid bins $`P',P''`$ into larger bin $`P`$ results in a cost $`\min(L(P')^\alpha,L(P'')^\alpha)`$.
-
-So with $`\alpha=0`$, the length of contigs is not accounted for and only set-theoretic operations define the dissimilarity value, while with $`\alpha=1`$ it is fully accounted for.
-By default $`\alpha=0.5`$.
-
-In the case where some contigs are _repeated_, i.e. a contig appears in more than one plasmid bin of $`A`$ and/or $`B`$, a _branch-and-bound_ algorithm computes the pairing between repeats contigs in $`A`$ and in $`B`$ that results in the minimum dissimilarity value.
-
-Finally the dissimilarity obtained as described above is _normalized_ into a value in $`[0,1]`$ by dividing it by
-
-```math
-\sum\limits_{P\in A}\sum\limits_{c\in P} \ell(c)^{\alpha} + \sum\limits_{Q\in B}\sum\limits_{c\in Q} \ell(c)^{\alpha}.
-```
+The result of applying a plasmid binning method to a draft assembly is a collection of unordered groups of contigs, called **plasmid bins**.
 
 ## Installation
 
+### Via pip
+
 ```sh
-pip install -r requirements.txt
+# At this repository root
+pip install .
 ```
 
 ### Docker
@@ -74,10 +49,12 @@ Run with a bind mount to exchange input/output data with the host. The example b
 
 ```sh
 podman run -v $(pwd)/examples:/data:U -it plaseval:latest \
-  pixi run python3 plaseval.py eval --pred /data/input/pred_bins_1.tsv \
-       --gt /data/input/gt_bins_1.tsv \
-       --out_file /data/output/P1G1_eval.out \
-       --log_file /data/output/P1G1_eval.log
+   pixi run python3 plaseval.py \
+      eval \
+         --pred /data/input/pred_bins.tsv \
+         --gt /data/input/gt_bins.tsv \
+         --out /data/output/P1G1_eval.tsv \
+         --log /data/output/P1G1_eval.log
 ```
 
 ### Apptainer / Singularity
@@ -92,107 +69,228 @@ Run with a bind mount, same pattern as Docker:
 
 ```sh
 apptainer run --bind examples:/data PlasEval.sif \
-  eval --pred /data/input/pred_bins_1.tsv \
-       --gt /data/input/gt_bins_1.tsv \
-       --out_file /data/output/P1G1_eval.out \
-       --log_file /data/output/P1G1_eval.log
+  eval --pred /data/input/pred_bins.tsv \
+       --gt /data/input/gt_bins.tsv \
+       --out /data/output/P1G1_eval.tsv \
+       --log /data/output/P1G1_eval.log
 ```
 
-## Usage
+## Input: collection of plasmid bins
 
-### Input: plasmid bins file
+The main input in both modes of PlasEval are two plasmid bins TSV files:
 
-The main input in both modes of PlasEval are the two plasmid bins files.
-A plasmid bins file is a TSV file that describes a set of plasmids bins in a forma where each row contains three pieces of information: the identifier of a plasmid bin, the identifier of a contig that belongs to this plasmid bin and the length of the contig.
-The file should have a header row with column names `plasmid`, `contig`, `contig_len`.
-An example is provided below that describes the set of plasmid bins where bin `P1` contains contigs `C1,C2` and bin `P2` contains contigs `C1`, `C3` and `C4`.
+| Column name | Value   | Description                                             |
+| ----------- | ------- | ------------------------------------------------------- |
+| plasmid     | `<str>` | Identifier of a plasmid bin                             |
+| contig      | `<str>` | Identifier of a contig that belongs to this plasmid bin |
+| contig_len  | `<int>` | Length of the contig                                    |
 
-```txt
-plasmid contig  contig_len
-P1 C1  2000
-P2 C3  3000
-P1 C2  2000
-P2 C1 2000
-P2 C4 2000
+An example is provided below that describes the collection of plasmid bins where bin `P1` contains contigs `C1` and `C2` and bin `P2` contains contigs `C1`, `C3` and `C4`.
+
+```tsv
+plasmid contig contig_len
+P1      C1     2000
+P2      C3     3000
+P1      C2     2000
+P2      C1     2000
+P2      C4     2000
 ```
 
 If a contig appears in several copies in a plasmid bin, the evaluation mode only accounts for one copy of the contig. The comparison mode can account for multiple copies of a contig in the same bin.
 
-### Input: numeric parameters
+## Computing recall, precision and F1 scores (`eval` subcommand)
 
-In both evaluation and comparison mode, PlasEval takes an extra optional parameter `min_len`: every contig of length below the value `min_len` is discarded from both sets of considered plasmid bins. This parameter is useful in comparison mode in the case of plasmid bins sets that contain many short repeated contigs, which can result in the branch-and-bound algorithm taking a long time to complete.
+In the **evaluation**  mode of PlasEval, given a collection of *predicted plasmid bins* resulting from a plasmid binning tools and a *ground truth* collection of plasmid bins, where each true plasmid bin contains all the contigs that belong to one of the plasmid present in the sequenced isolate, PlasEval computes three statistics, the *precision*, the *recall* and the *F1-score* of the predicted plasmid bins with respect to the ground truth.
 
-The comparison mode uses one more parameter: the value of $\alpha$ can be passed as a parameter `p`, although by default it takes value $0.5$. The branch-and-bound search always runs to completion; there is no iteration limit.
+For a group $X$ of contigs, we denote by $L(X)$ the cumulated length of the contigs in $X$.
+For a predicted plasmid bin $P$ and a ground truth plasmid bin $T$, we define the *overlap* between $P$ and $T$, denoted by $overlap(P,T)$, as the cumulated length of the contigs presents in both $P$ and $T$.
 
-### Runing `eval` or `comp` modes
+Given a collection $A$ of predicted plasmid bins and a collection $B$ of ground truth plasmid bins, we define the precision $p(A,B)$ and recall $r(A,B)$ as follows:
 
-1. The following command is used for the evaluation mode:
+```math
+p(A,B) = \frac{\sum\limits_{P\in A} \max\limits_{T\in B} overlap(P,T)}{\sum\limits_{P\in A}L(P)}, r(A,B) = \frac{\sum\limits_{T\in B} \max\limits_{P\in A} overlap(P,T)}{\sum\limits_{T\in B}L(T)}.
+```
 
-   ```sh
-   python plaseval.py eval --pred PREDICTED_BINS_TSV --gt GROUNDTRUTH_BINS_TSV --out_file OUT_FILE --log_file LOG_FILE (--min_len LEN_THRESHOLD)
-   ```
+The F1-score is the arithmetic mean of the precision and recall:
 
-   Where `pred` and `gt` are TSV files, with the set of predicted and ground truth plasmid bins respecitvely. `out_file` is the path to the output file. The integer length threshold `min_len` can be provided as an optional parameter.
+```math
+F_1(A,B) = 2\frac{{p}(A,B){r}(A,B)}{{p}(A,B)+{r}(A,B)}.
+```
 
-2. In addition to the two plasmid bin files, the comparison mode also takes the path to the log file as input.
-   The following command is used for the comparison mode:
+### Usage
 
-   ```sh
-   python plaseval.py comp --l LEFT_BINS_TSV --r RIGHT_BINS_TSV --out_file OUT_FILE --log_file LOG_FILE (--min_len LEN_THRESHOLD --p ALPHA)
-   ```
+```bash
+plaseval eval --gt GROUNDTRUTH_BINS_TSV --pred PREDICTED_BINS_TSV --out OUT_FILE --log LOG_FILE [--min-len LEN_THRESHOLD]
+```
 
-   Where `LEFT_BINS_TSV` and `RIGHT_BINS_TSV` are TSV files, each with one set of plasmid bins. `out_file` is the path to the output file while `log_file` is the path to the log file. The parameters `min_len` and `p` are optional.
+### Options
+
+* `--min-len` (default: `0`): minimum length of a contig to be considered in the evaluation.
 
 ### Output
 
-1. The output file is TSV file with the following columns:
-   1. `Level`: Precision and recall statistics are computed for individual bins (`Individual` level). The average precision, recall and F1 statistics are then computed for the overall sample (`Overall` level).
-   2. `Statistic`: This columns list the type of statistic (`Precision`, `Recall` or `F1`).
-   3. `Bin`: For the `Individual` level, we compute the precision for each predicted plasmid bin and the recall for each ground truth plasmid bin. The identity of the bin (predicted or ground truth) is given in this column. Note that this column is empty for `Overall` sample statistics.
-   4. `Unwtd_Stat`: Contig-level statistics for an individual bin or for the overall sample.
-   5. `Wtd_Stat`: Basepair-level statistics for an individual bin or for the overall sample.
-   6. `Unwtd_Match`: The best bin from the opposite side matched to the bin in question (from the 'Bin' column) according to contig-level statistics. For `Precision`, this column will have the ground truth bin that best matches the predicted bin from the 'Bin' column. For `Recall`, this column will have the predicted bin that best matches the ground truth bin from the 'Bin' column. Note that this column is empty for `Overall` sample statistics.
-   7. `Wtd_Stat`: The best bin from the opposite side matched to the bin in question (from the 'Bin' column) according to basepair-level statistics. For `Precision`, this column will have the ground truth bin that best matches the predicted bin from the 'Bin' column. For `Recall`, this column will have the predicted bin that best matches the ground truth bin from the 'Bin' column. Note that this column is empty for `Overall` sample statistics.
+Precision and recall statistics are computed for individual bins (`Individual` level).
+The average precision, recall and F1 statistics are then computed for the overall sample (`Overall` level).
 
-2. The output file for the compare mode contains the following information:
-   1. `Total_ctg_length`: Cumulative length of contigs present in at least one of set of plasmid bins.
-   2. `Total_ctg_length_alpha`: Cumulative dissimilarity cost of all contigs from (a).
-   3. `Cuts`: Cost of cuts: cost of splitting bins from the first set of plasmid bins.
-   4. `Joins`: Cost of joins: cost of splitting bins from the second set of plasmid bins.
-   5. `Extra_ctgs`: Cumulative length of contigs present only in the first set.
-   6. `Missing_ctgs`: Cumulative length of contigs present only in the second set.
-   7. `Dissimilarity`: Dissimilarity score
+The output file is TSV file with the following columns:
 
-The compare mode also provides a log file with some other details related to the comparison algorithm. These include the maximum number of matchings possible, the time taken to execute the method, the number of recursive function calls made during the comparison and finally the actual matching between contigs of both sets of plasmid bins that yields the dissimilarity score in the output file described above.
+| Column        | Values                        | Description                                                                                                                                                                                                                                                                        |
+| ------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Level`       | `Individual` or `Overall`     | Level of the statistics                                                                                                                                                                                                                                                            |
+| `Statistic`   | `Precision`, `Recall` or `F1` | Type of the statistic                                                                                                                                                                                                                                                              |
+| `Bin`         | `<str>` or `None`             | For the `Individual` level, we compute the precision for each predicted plasmid bin and the recall for each ground truth plasmid bin. The identity of the bin (predicted or ground truth) is given in this column. Note that this column is empty for `Overall` sample statistics. |
+| `Unwtd_Stat`  | `<float>`                     | Contig-level statistics for an individual bin or for the overall sample                                                                                                                                                                                                            |
+| `Unwtd_Match` | `<str>` or `None`             | Best bin match for the unweighted statistics (for `Individual` level), otherwise `None`                                                                                                                                                                                            |
+| `Wtd_Stat`    | `<float>`                     | Basepair-level statistics for an individual bin or for the overall sample                                                                                                                                                                                                          |
+| `Wtd_Match`   | `<str>` or `None`             | Best bin match for the weighted statistics (for `Individual` level), otherwise `None`                                                                                                                                                                                              |
 
-### Examples
+For `Unwtd_Match` and `Wtd_Match` columns:
 
-A few toy examples to demonstrate the use of PlasEval have been provided in the examples directory.
+* For `Statistic` column value `Precision`, this column will have the ground truth bin that best matches the predicted bin from the `Bin` column.
+* For `Statistic` column value `Recall`, this column will have the predicted bin that best matches the ground truth bin from the `Bin` column.
 
-1. The following command evaluates predicted plasmid bins (`pred_bins_1.tsv`) against the ground truth plasmid bins (`gt_bins_1.tsv`). Details of the evaluation output will be printed to the file `P1G1_eval.out`.
+## Computing dissimilarity measure (`comp` subcommand)
 
-   ```sh
-   cd src/
-   python plaseval.py eval --pred ../examples/input/pred_bins_1.tsv --gt ../examples/input/gt_bins_1.tsv --out_file ../examples/output/P1G1_eval.out --log_file ../examples/output/P1G1_eval.log
-   ```
+In the **comparison** mode of PlasEval, given two collections of *predicted plasmid bins* (either resulting from two plasmid binning tools or from a plasmid binning tool and a ground truth), PlasEval computes three statistics, PlasEval computes a *dissimilarity measure* that indictaes how much both collections of predicted plasmid bins are in agreement.
+The full details of the dissimilarity measure computed by PlasEval are available in the preprint *[PlasEval: a framework for comparing and evaluating plasmid binning tools](https://link.springer.com/article/10.1186/s12859-024-05941-0)* and we describe below its general principle.
+The dissimilariy value is the sum of 4 terms accounting respectively for
 
-2. The following command evaluates predicted plasmid bins (`pred_bins_1.tsv`) against the other set of ground truth plasmid bins (`gt_bins_2.tsv`), only considering contigs above $1000$ bp. Details of the evaluation output will be printed to the file `P1G2_eval.out`.
+* *extra contigs*: the contigs present in $A$ but not in $B$;
+* *missing contigs*: the contigs present in $B$ but not in $A$;
+* *splits*: splitting of the plasmid bins of $A$ to obtain a collection of intermediate bins defined as the intersection of $A$ and $B$;
+* *joins*: joining the splitted plasmid bins into the plasmid bins of $B$.
 
-   ```sh
-   cd src/
-   python plaseval.py eval --pred ../examples/input/pred_bins_1.tsv --gt ../examples/input/gt_bins_2.tsv --min_len 1000 --out_file ../examples/output/P1G2_eval.out
-   ```
+Each of these components incur a *cost*, parameterized by a parameter $\alpha \in [0,1]$:
 
-3. The following command will compare the sets of plasmid bins in `pred_bins_1.tsv` and `gt_bins_1.tsv`. The details of the dissimilarity between the two sets will be output to `P1G1_comp.out` while the log file `P1G1_comp.log` contains the miscellaneous detials.
+* each extra or missing contig $c$ results in a cost $\ell(c)^\alpha$, where $\ell(c)$ is the length of $c$;
+* each split of a plasmid bin $P$ into two smaller bins $P'$ and $P''$ results in a cost $\min(L(P')^\alpha,L(P'')^\alpha)$;
+* each join of two intermediate plasmid bins $P',P''$ into larger bin $P$ results in a cost $\min(L(P')^\alpha,L(P'')^\alpha)$.
 
-   ```sh
-   cd src/
-   python plaseval.py comp --l ../examples/input/pred_bins_1.tsv --r ../examples/input/gt_bins_1.tsv --out_file ../examples/output/P1G1_comp.out --log_file ../examples/output/P1G1_comp.log
-   ```
+So with $\alpha=0$, the length of contigs is not accounted for and only collection-theoretic operations define the dissimilarity value, while with $\alpha=1$ it is fully accounted for.
+By default $\alpha=0.5$.
 
-4. The following command will compare the sets of plasmid bins in `pred_bins_1.tsv` and `pred_bins_2.tsv`, neither of which contains the ground truth. The cost parameter $\alpha$ is set at $0.75$. The details of the dissimilarity between the two sets will be output to `P1P2_comp.out` while the log file `P1P2_comp.log` contains the miscellaneous detials for the comparison.
+In the case where some contigs are *repeated*, i.e. a contig appears in more than one plasmid bin of $A$ and/or $B$, a *branch-and-bound* algorithm computes the pairing between repeats contigs in $A$ and in $B$ that results in the minimum dissimilarity value.
 
-   ```sh
-   cd src/
-   python plaseval.py comp --l ../examples/input/pred_bins_1.tsv --r ../examples/input/pred_bins_2.tsv --p 0.25 --out_file ../examples/output/P1P2_0.75_comp.out --log_file ../examples/output/P1P2_0.75_comp.log
-   ```
+Finally the dissimilarity obtained as described above is *normalized* into a value in $[0,1]$ by dividing it by
+
+```math
+\sum\limits_{P\in A}\sum\limits_{c\in P} \ell(c)^{\alpha} + \sum\limits_{Q\in B}\sum\limits_{c\in Q} \ell(c)^{\alpha}.
+```
+
+### Usage
+
+```bash
+plaseval comp --gt GROUNDTRUTH_BINS_TSV --pred PREDICTED_BINS_TSV --out OUT_FILE --log LOG_FILE [--min-len LEN_THRESHOLD --alpha ALPHA]
+```
+
+### Options
+
+* `--min-len` (default: `0`): minimum length of a contig to be considered in the evaluation.
+* `--alpha` (default: `0.5`): $\alpha$ parameter.
+
+### Output
+
+The output file (TSV) for the compare mode contains the following information:
+
+1. `Total_ctg_length`: Cumulative length of contigs present in at least one of collection of plasmid bins.
+2. `Total_ctg_length_alpha`: Cumulative dissimilarity cost of all contigs from (a).
+3. `Cuts`: (Cost of cuts) cost of splitting bins from the first collection of plasmid bins.
+4. `Joins`: (Cost of joins) cost of splitting bins from the second collection of plasmid bins.
+5. `Extra_ctgs`: Cumulative length of contigs present only in the first collection.
+6. `Missing_ctgs`: Cumulative length of contigs present only in the second collection.
+7. `Dissimilarity`: Dissimilarity score
+
+The compare mode also provides a log file with some other details related to the comparison algorithm. These include the maximum number of matchings possible, the time taken to execute the method, the number of recursive function calls made during the comparison and finally the actual matching between contigs of both collections of plasmid bins that yields the dissimilarity score in the output file described above.
+
+For `Cuts`, `Joins`, `Extra_ctgs`, `Missing_ctgs` and `Dissimilarity`, the second column corresponds to the unnormalized value, while the third one corresponds to the normalized value.
+
+```tsv
+Total_ctg_length        <float>
+Total_ctg_length_alpha  <float>
+Cuts                    <float>  <float>
+Joins                   <float>  <float>
+Extra_ctgs              <float>  <float>
+Missing_ctgs            <float>  <float>
+Dissimilarity           <float>  <float>
+```
+
+### Technical notes
+
+The branch-and-bound search always runs to completion; there is no iteration limit.
+
+## Example
+
+In `examples` directory there are two colelctions of plasmid bins to compare:
+
+* `examples/input/gt_bins.tsv`: ground truth bins
+* `examples/input/pred_bins.tsv`: predicted bins
+
+The following diagramm show the differences between the ground-truth and the prediction:
+
+```mermaid
+graph
+   subgraph Ground Truth
+      subgraph GT0 [GT_0]
+         GT_0_C1["C1"]
+         GT_0_C2["C2"]
+         GT_0_C3["C3"]
+      end
+
+      subgraph GT1 [GT_1]
+         GT_1_C3["C3"]
+         GT_1_C4["C4"]
+         GT_1_C5["C5"]
+         GT_1_C6["C6"]
+         GT_1_C7["C7"]
+      end
+
+      subgraph GT2 [GT_2]
+         GT_2_C8["C8"]
+      end
+   end
+
+   subgraph Prediction
+      subgraph P0 [Pred_0]
+         Pred_0_C1["C1"]
+         Pred_0_C2["C2"]
+      end
+
+
+      subgraph P1 [Pred_1]
+         Pred_1_C3["C3"]
+         Pred_1_C6["C6"]
+         Pred_1_C7["C7"]
+         Pred_1_C10["C10"]
+      end
+   end
+
+   GT_0_C1 --> Pred_0_C1
+   GT_0_C2 --> Pred_0_C2
+
+   GT_1_C3 --> Pred_1_C3
+   GT_1_C6 --> Pred_1_C6
+   GT_1_C7 --> Pred_1_C7
+```
+
+Particularly:
+
+* Contig `C3` is present in ground truth bins `GT_0` and `GT_1` but only in `Pred_1`.
+* Contigs `C4` and `C5` in `GT_1` and contig `C8` in `GT_2` are not present in any predicted bin (missing contigs).
+* Contig `C10` in `Pred_1` is an extra contig.
+
+```sh
+#
+# Recall, precision and F1 evaluations
+#
+plaseval eval --gt examples/input/gt_bins.tsv --pred examples/input/pred_bins.tsv --out tmp/eval_example.tsv --log tmp/eval_example.log
+#
+# Dissimilarity measure computation
+#
+plaseval comp --gt examples/input/gt_bins.tsv --pred examples/input/pred_bins.tsv --out tmp/comp_example.out --log tmp/comp_example.log
+```
+
+An example of output files can be found in the `examples/output/` directory.
+
+## Reference
+
+Mane, A., Sanderson, H., White, A.P. *et al.* Plaseval: a framework for comparing and evaluating plasmid detection tools. *BMC Bioinformatics* **25**, 365 (2024). <https://doi.org/10.1186/s12859-024-05941-0>
