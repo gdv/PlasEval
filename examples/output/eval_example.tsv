@@ -1,0 +1,9 @@
+Level	Statistic	Bin	Unwtd_Stat	Unwtd_Match	Wtd_Stat	Wtd_Match
+Individual	Precision	Pred_0	1.0	GT_0	1.0	GT_0
+Individual	Precision	Pred_1	0.75	GT_1	0.9524	GT_1
+Individual	Recall	GT_0	0.6667	Pred_0	0.7059	Pred_0
+Individual	Recall	GT_1	0.6	Pred_1	0.4545	Pred_1
+Individual	Recall	GT_2	0.0	None	0.0	None
+Overall	Precision	None	0.8333	None	0.9778	None
+Overall	Recall	None	0.5556	None	0.5366	None
+Overall	F1	None	0.6667	None	0.6929	None
