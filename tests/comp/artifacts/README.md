@@ -44,4 +44,7 @@ The folder `test_cases/input` contains several "test" plasmid bins. Pairs of the
 
 21. Bins 2 vs 13: Extra copies on both sides. Illustrates branch-n-bound functionality.
 
-NOTE: Tests 20 and 21 were designed to test cases with splits and joins with extra copies on both sides. However, they ended up without any splits (both tests 20, 21) or joins (test 20). Interestingly, the algorithm matched the contig copies in such a way that the splits / joins were not required to transform one set of bins into the other.
+> [!NOTE]
+> Tests 20 and 21 were designed to test cases with splits and joins with extra copies on both sides.
+> However, they ended up without any splits (both tests 20, 21) or joins (test 20).
+> Interestingly, the algorithm matched the contig copies in such a way that the splits / joins were not required to transform one set of bins into the other.

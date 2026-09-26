@@ -1,0 +1,104 @@
+{
+  "[markdown]": {
+    "editor.formatOnSave": true
+  },
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "always",
+      "source.organizeImports": "always"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  "[toml]": {
+    "editor.formatOnSave": true
+  },
+  "autoDocstring.docstringFormat": "numpy",
+  "better-todo-tree.general.tags": [
+    "TODO",
+    "FIXME",
+    "FEATURE",
+    "BUG",
+    "REFACTOR",
+    "HACK",
+    "XXX",
+    "TOTEST",
+    "OPTIMIZE",
+    "DOCU",
+    "REVIEW"
+  ],
+  "better-todo-tree.highlights.customHighlight": {
+    "BUG": {
+      "foreground": "#FF6347",
+      "icon": "bug"
+    },
+    "DOCU": {
+      "foreground": "#008B8B",
+      "icon": "log"
+    },
+    "FEATURE": {
+      "foreground": "#6495ED",
+      "icon": "telescope"
+    },
+    "FIXME": {
+      "foreground": "#B22222",
+      "icon": "flame"
+    },
+    "HACK": {
+      "foreground": "#FF7F50",
+      "icon": "tools"
+    },
+    "OPTIMIZE": {
+      "foreground": "#cd9c5c",
+      "icon": "zap"
+    },
+    "REFACTOR": {
+      "foreground": "#4682B4",
+      "icon": "workflow"
+    },
+    "REVIEW": {
+      "foreground": "#9370DB",
+      "icon": "code-review"
+    },
+    "TODO": {
+      "foreground": "#006400",
+      "icon": "check-circle"
+    },
+    "TOTEST": {
+      "foreground": "#ADD8E6",
+      "icon": "beaker"
+    },
+    "XXX": {
+      "foreground": "#FFA500",
+      "icon": "alert"
+    }
+  },
+  "better-todo-tree.highlights.defaultHighlight": {
+    "background": "#1d1f23",
+    "fontStyle": "italic",
+    "foreground": "#006400",
+    "gutterIcon": true,
+    "type": "text-and-comment"
+  },
+  "better-todo-tree.regex.regex": "((//|#|%|<!--|;|/\\*|^|\"\"\"|'|(\\*|-)\\s\\[(\\s|x)\\])\\s*($TAGS))",
+  "comment-divider.length": 88,
+  "files.exclude": {
+    "**/*.egg-info": true,
+    "**/__pycache__": true,
+    ".pytest_cache": true,
+    ".ruff_cache": true,
+    "lcov.info": true
+  },
+  "markdown.extension.toc.levels": "2..6",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUndefinedVariable": "none"
+  },
+  "python.analysis.typeCheckingMode": "off",
+  "python.languageServer": "None",
+  "python.testing.pytestArgs": [
+    "--config-file=${workspaceFolder}/pyproject.toml",
+    "--cov=src/plaseval"
+  ],
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false
+}

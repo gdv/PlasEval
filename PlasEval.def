@@ -1,6 +1,10 @@
 Bootstrap: docker
 From: ubuntu:24.04
 
+%labels
+    Author Gianluca Della Vedova <gianluca@dellavedova.org>
+    Description PlasEval — plasmid binning evaluation and comparison tool
+
 %files
     src/pixi.toml /opt/plaseval/pixi.toml
     # src/pixi.lock /opt/plaseval/pixi.lock
@@ -30,11 +34,6 @@ From: ubuntu:24.04
 
 %runscript
     exec pixi run --manifest-path /opt/plaseval/pixi.toml plaseval "$@"
-
-%labels
-    Author Gianluca Della Vedova <gianluca@dellavedova.org>
-    Version 0.1.0
-    Description PlasEval — plasmid binning evaluation and comparison tool
 
 %help
     PlasEval CLI. Usage:

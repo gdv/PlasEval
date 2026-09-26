@@ -1,0 +1,12 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# Virtual Environments
+.venv
+
+# Caches
+__pycache__/
+
+# Artifacts
+.coverage
