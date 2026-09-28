@@ -1,24 +1,33 @@
 # PlasEval
 
+<!--
+[![PyPI][pypi_badge]][pypi_link]
+[![Python][python_badge]][pypi_link]
+-->
+[![uv][uv_badge]][uv_link]
+[![CI][ci_badge]][ci_link]
+[![Coverage][cov_badge]][cov_link]
+[![License][license_badge]][license_link]
+
 PlasEval is a tool aimed at evaluating the accuracy and at comparing methods for the problem of **plasmid binning**.
 
 **Table of content:**
 
 * [Background: plasmid binning](#background-plasmid-binning)
 * [Installation](#installation)
-   * [Via pip](#via-pip)
-   * [Docker](#docker)
-   * [Apptainer / Singularity](#apptainer--singularity)
+  * [Via pip](#via-pip)
+  * [Docker](#docker)
+  * [Apptainer / Singularity](#apptainer--singularity)
 * [Input: collection of plasmid bins](#input-collection-of-plasmid-bins)
 * [Computing recall, precision and F1 scores (`eval` subcommand)](#computing-recall-precision-and-f1-scores-eval-subcommand)
-   * [Usage](#usage)
-   * [Options](#options)
-   * [Output](#output)
+  * [Usage](#usage)
+  * [Options](#options)
+  * [Output](#output)
 * [Computing dissimilarity measure (`comp` subcommand)](#computing-dissimilarity-measure-comp-subcommand)
-   * [Usage](#usage-1)
-   * [Options](#options-1)
-   * [Output](#output-1)
-   * [Technical notes](#technical-notes)
+  * [Usage](#usage-1)
+  * [Options](#options-1)
+  * [Output](#output-1)
+  * [Technical notes](#technical-notes)
 * [Example](#example)
 * [Reference](#reference)
 
@@ -48,13 +57,28 @@ docker build -t plaseval .
 Run with a bind mount to exchange input/output data with the host. The example below mounts the `examples/` directory at `/data` inside the container and runs the evaluation mode:
 
 ```sh
-podman run -v $(pwd)/examples:/data:U -it plaseval:latest \
-   pixi run python3 plaseval.py \
+docker run --rm --user "$(id -u):$(id -g)" \
+   -v "$(pwd)/examples:/data" plaseval:latest \
       eval \
          --pred /data/input/pred_bins.tsv \
          --gt /data/input/gt_bins.tsv \
          --out /data/output/P1G1_eval.tsv \
          --log /data/output/P1G1_eval.log
+```
+
+`--user` makes the output files owned by you rather than root. The
+`/data/output` directory must exist and be writable.
+
+With Podman, drop `--user` and add `:U` to the mount so the container user can
+write to it:
+
+```sh
+podman run --rm -v "$(pwd)/examples:/data:U" plaseval:latest \
+  eval \
+    --pred /data/input/pred_bins.tsv \
+    --gt /data/input/gt_bins.tsv \
+    --out /data/output/P1G1_eval.tsv \
+    --log /data/output/P1G1_eval.log
 ```
 
 ### Apptainer / Singularity
@@ -68,11 +92,12 @@ apptainer build PlasEval.sif PlasEval.def
 Run with a bind mount, same pattern as Docker:
 
 ```sh
-apptainer run --bind examples:/data PlasEval.sif \
-  eval --pred /data/input/pred_bins.tsv \
-       --gt /data/input/gt_bins.tsv \
-       --out /data/output/P1G1_eval.tsv \
-       --log /data/output/P1G1_eval.log
+apptainer run --bind examples:/data PlasEval.sif  \
+  plaseval eval \
+    --pred /data/input/pred_bins.tsv \
+    --gt /data/input/gt_bins.tsv \
+    --out /data/output/P1G1_eval.tsv \
+    --log /data/output/P1G1_eval.log
 ```
 
 ## Input: collection of plasmid bins
@@ -294,3 +319,31 @@ An example of output files can be found in the `examples/output/` directory.
 ## Reference
 
 Mane, A., Sanderson, H., White, A.P. *et al.* Plaseval: a framework for comparing and evaluating plasmid detection tools. *BMC Bioinformatics* **25**, 365 (2024). <https://doi.org/10.1186/s12859-024-05941-0>
+
+<!-- Badges -->
+
+<!--
+Changes:
+
+* PyPI project name `plaseval`
+* GitHub repo `gdv/PlasEval`
+-->
+
+<!--
+[pypi_badge]: https://img.shields.io/pypi/v/plaseval?style=for-the-badge&logo=python&color=blue "Package badge"
+[pypi_link]: https://pypi.org/project/plaseval/ "Package link"
+
+[python_badge]: https://img.shields.io/pypi/pyversions/plaseval?style=for-the-badge&logo=python&logoColor=white "Python versions badge"
+-->
+
+[uv_badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fuv%2Fmain%2Fassets%2Fbadge%2Fv0.json&style=for-the-badge "uv badge"
+[uv_link]: https://docs.astral.sh/uv/ "uv link"
+
+[ci_badge]: https://img.shields.io/github/actions/workflow/status/gdv/PlasEval/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI "CI badge"
+[ci_link]: https://github.com/gdv/PlasEval/actions/workflows/ci.yml "CI link"
+
+[cov_badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2FREPO%2Fbadges%2Fcoverage.json&style=for-the-badge&logo=pytest&logoColor=white "Coverage badge"
+[cov_link]: https://github.com/gdv/PlasEval/actions/workflows/ci.yml "Coverage link"
+
+[license_badge]: https://img.shields.io/github/license/gdv/PlasEval?style=for-the-badge&color=green "Licence badge"
+[license_link]: https://github.com/gdv/PlasEval/blob/main/LICENSE "Licence link"

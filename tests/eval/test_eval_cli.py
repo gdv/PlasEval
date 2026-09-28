@@ -1,4 +1,4 @@
-"""Pytest suite for the `plaseval comp` CLI.
+"""Pytest suite for the `plaseval eval` CLI.
 
 Layout (relative to this file, adjust ARTIFACTS_ROOT below if needed):
 
@@ -8,7 +8,7 @@ Layout (relative to this file, adjust ARTIFACTS_ROOT below if needed):
           test_bins_0.tsv
           test_bins_1.tsv
         ...
-      comp/
+      eval/
         artifacts/
           outputs/
             test_0v0.out
@@ -60,63 +60,56 @@ NUMERIC_ABS_TOLERANCE = float(os.environ.get("PLASEVAL_NUMERIC_ABS_TOLERANCE", "
 
 
 # ------------------------------------------------------------------------------------ #
-# The (gt, pred[, alpha]) couples to test.
+# The (gt, pred) couples to test.
 #
-# Each entry is (gt_idx, pred_idx, alpha), where alpha is None when the
-# --alpha flag should not be passed (i.e. the CLI's default is used).
+# Each entry is (gt_idx, pred_idx)
 #
 # The expected output/log filename prefix is derived as:
-#   test_<pred>v<gt>                  when alpha is None
-#   test_<pred>v<gt>_alpha_<alpha>    otherwise
+#   test_<pred>v<gt>
 # ------------------------------------------------------------------------------------ #
 TEST_CASES = [
-    (0, 0, None),
-    (0, 1, None),
-    (1, 0, None),
-    (1, 1, None),
-    (1, 1, 0),
-    (1, 2, None),
-    (1, 5, None),
-    (1, 6, None),
-    (1, 7, None),
-    (1, 8, None),
-    (1, 9, None),
-    (1, 10, None),
-    (1, 11, None),
-    (2, 2, None),
-    (2, 2, 0),
-    (2, 11, None),
-    (2, 13, None),
-    (3, 4, None),
-    (7, 8, None),
-    (7, 12, None),
-    (8, 7, None),
-    (9, 14, None),
+    (0, 0),
+    (0, 1),
+    (1, 0),
+    (1, 1),
+    (1, 1),
+    (1, 2),
+    (1, 5),
+    (1, 6),
+    (1, 7),
+    (1, 8),
+    (1, 9),
+    (1, 10),
+    (1, 11),
+    (2, 2),
+    (2, 2),
+    (2, 11),
+    (2, 13),
+    (3, 4),
+    (7, 8),
+    (7, 12),
+    (8, 7),
+    (9, 14),
 ]
 
 
-def _prefix_for(gt_idx: int, pred_idx: int, alpha: float | None) -> str:
-    prefix = f"test_{pred_idx}v{gt_idx}"
-    if alpha is not None:
-        alpha_str = f"{alpha:g}".replace(".", "_")
-        prefix += f"_alpha_{alpha_str}"
-    return prefix
+def _prefix_for(gt_idx: int, pred_idx: int) -> str:
+    return f"test_{pred_idx}v{gt_idx}"
 
 
-def build_cases() -> list[tuple[Path, Path, float | None, Path, Path]]:
+def build_cases() -> list[tuple[Path, Path, Path, Path]]:
     """Build (gt, pred, alpha) cases from TEST_CASES."""
     cases = []
-    for pred_idx, gt_idx, alpha in TEST_CASES:
-        prefix = _prefix_for(gt_idx, pred_idx, alpha)
+    for pred_idx, gt_idx in TEST_CASES:
+        prefix = _prefix_for(gt_idx, pred_idx)
         pred_path = INPUT_DIR / f"test_bins_{pred_idx}.tsv"
         gt_path = INPUT_DIR / f"test_bins_{gt_idx}.tsv"
-        expected_out = OUTPUT_DIR / f"{prefix}.out"
+        expected_out = OUTPUT_DIR / f"{prefix}.tsv"
         expected_log = OUTPUT_DIR / f"{prefix}.log"
         cases.append(
             (
                 pred_path,
                 gt_path,
-                alpha,
                 expected_out,
                 expected_log,
             ),
@@ -153,16 +146,15 @@ def runner() -> CliRunner:
 # ==================================================================================== #
 #                                        HELPERS                                       #
 # ==================================================================================== #
-def run_plaseval_comp(  # noqa: PLR0913, PLR0917
+def run_plaseval_eval(
     runner: CliRunner,
     gt_path: Path,
     pred_path: Path,
-    alpha: float | None,
     out_path: Path,
     log_path: Path,
 ) -> Result:
     args = [
-        "comp",
+        "eval",
         "--gt",
         str(gt_path),
         "--pred",
@@ -172,9 +164,6 @@ def run_plaseval_comp(  # noqa: PLR0913, PLR0917
         "--log",
         str(log_path),
     ]
-    if alpha is not None:
-        args += ["--alpha", str(alpha)]
-
     return runner.invoke(APP, args)
 
 
@@ -240,14 +229,13 @@ def compare_with_tolerance(
 #                                         TESTS                                        #
 # ==================================================================================== #
 @pytest.mark.parametrize(
-    ("pred_path", "gt_path", "alpha", "expected_out", "expected_log"),
+    ("pred_path", "gt_path", "expected_out", "expected_log"),
     CASES,
 )
-def test_comp_matches_expected_output(  # noqa: PLR0913, PLR0917
+def test_eval_matches_expected_output(  # noqa: PLR0913, PLR0917
     runner: CliRunner,
     pred_path: Path,
     gt_path: Path,
-    alpha: float,
     expected_out: Path,
     expected_log: Path,
     tmp_path: Path,
@@ -256,16 +244,16 @@ def test_comp_matches_expected_output(  # noqa: PLR0913, PLR0917
     assert pred_path.exists(), f"missing pred input file: {pred_path}"
     assert expected_out.exists(), f"missing expected output file: {expected_out}"
 
-    out_path = tmp_path / "result.out"
+    out_path = tmp_path / "result.tsv"
     log_path = tmp_path / "result.log"
 
-    result = run_plaseval_comp(runner, gt_path, pred_path, alpha, out_path, log_path)
+    result = run_plaseval_eval(runner, gt_path, pred_path, out_path, log_path)
 
     log_contents = (
         log_path.read_text() if log_path.exists() else "<log file not created>"
     )
     assert result.exit_code == 0, (
-        f"plaseval comp exited with {result.exit_code}\n"
+        f"plaseval eval exited with {result.exit_code}\n"
         f"--- output ---\n{result.output}\n"
         f"--- exception ---\n{result.exception!r}\n"
         f"--- log ---\n{log_contents}"
@@ -292,10 +280,10 @@ def test_missing_gt_file_fails_gracefully(runner: CliRunner, tmp_path: Path) -> 
         pytest.skip("no reference input files available to build this case")
 
     missing_gt = INPUT_DIR / "does_not_exist_bin.tsv"
-    pred_path, _, alpha, _, _ = CASES[0]
-    out_path = tmp_path / "result.out"
+    pred_path, _, _, _ = CASES[0]
+    out_path = tmp_path / "result.tsv"
     log_path = tmp_path / "result.log"
 
-    result = run_plaseval_comp(runner, missing_gt, pred_path, alpha, out_path, log_path)
+    result = run_plaseval_eval(runner, missing_gt, pred_path, out_path, log_path)
 
     assert result.exit_code != 0, "expected a non-zero exit code for missing --gt file"

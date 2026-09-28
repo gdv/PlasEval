@@ -1,0 +1,9 @@
+Level	Statistic	Bin	Unwtd_Stat	Unwtd_Match	Wtd_Stat	Wtd_Match
+Individual	Precision	PD0	1.0	PD0	1.0	PD0
+Individual	Precision	PD1	0.5	PD0	0.625	PD0
+Individual	Precision	PD2	1.0	PD1	1.0	PD1
+Individual	Recall	PD0	0.6667	PD0	0.7059	PD0
+Individual	Recall	PD1	0.6667	PD2	0.5455	PD1
+Overall	Precision	None	0.8333	None	0.8667	None
+Overall	Recall	None	0.6667	None	0.6667	None
+Overall	F1	None	0.7407	None	0.7537	None

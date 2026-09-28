@@ -1,12 +1,17 @@
-FROM ghcr.io/prefix-dev/pixi:0.71.1
+FROM python:3.13-slim
 
-COPY src /app
-WORKDIR /app
-RUN pixi install
-RUN pixi shell-hook  > /shell-hook.sh
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# extend the shell-hook script to run the command passed to the container
-RUN echo 'exec "$@"' >> /shell-hook.sh
+# Install from the current repo state, then discard the sources
+COPY . /tmp/PlasEval
+RUN pip install /tmp/PlasEval \
+    && rm -rf /tmp/PlasEval
 
-VOLUME ["/data"]
-ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+LABEL org.opencontainers.image.source="https://github.com/gdv/PlasEval" \
+    org.opencontainers.image.description="PlasEval - evaluation and comparison of plasmid binning"
+
+WORKDIR /data
+ENTRYPOINT ["plaseval"]
+CMD ["--help"]

@@ -8,8 +8,9 @@
     version = "0.3.0"
     description = "PlasEval is a tool aimed at evaluating the accuracy and at comparing methods for the problem of plasmid binning."
     readme = "README.md"
+    license = { file = "LICENSE" }
     requires-python = ">=3.13"
-    dependencies = ["networkx<4", "pandas<4.0", "bidict <1.0", "typer>=0.27.2"]
+    dependencies = ["pandas<4.0", "bidict <1.0", "typer>=0.27.2"]
 
     [project.scripts]
         plaseval = "plaseval:main"
@@ -20,7 +21,7 @@
 
 [dependency-groups]
     dev = [{ include-group = "stubs" }, { include-group = "test" }]
-    stubs = ["pandas-stubs>=3.0.0.260204", "types-networkx>=3.6.1.20260624"]
+    stubs = ["pandas-stubs>=3.0.0.260204"]
     test = ["pytest>=9.1.1", "pytest-cov>=7.1.0"]
 
 [tool.ruff.lint]
@@ -59,7 +60,12 @@
     # addopts = "--import-mode=importlib"
     addopts = ["-ra", "-q", "--import-mode=importlib"]
 
+[tool.coverage.run]
+    source_pkgs = ["plaseval"]
+    branch = true
+
 [tool.coverage.report]
+    show_missing = true
     exclude_also = [
         'def __repr__',
         'if self.debug:',

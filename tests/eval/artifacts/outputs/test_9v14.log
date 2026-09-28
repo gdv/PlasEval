@@ -1,0 +1,19 @@
+plaseval.eval.infra.log_publisher - INFO - #Precision: Proportion of correctly identified contigs for each prediction
+plaseval.eval.infra.log_publisher - INFO - >Precision details
+plaseval.eval.infra.log_publisher - INFO - #Predicted_bin	Unwtd_Precision	Unwtd_Reference_plasmid	Wtd_Precision	Wtd_Reference_plasmid
+plaseval.eval.infra.log_publisher - INFO - PD0	1.0	PD0	1.0	PD0
+plaseval.eval.infra.log_publisher - INFO - PD1	1.0	PD1	1.0	PD1
+plaseval.eval.infra.log_publisher - INFO - PD2	0.6667	PD1	0.625	PD1
+plaseval.eval.infra.log_publisher - INFO - 
+plaseval.eval.infra.log_publisher - INFO - #Recall: Proportion of correctly identified contigs for each reference
+plaseval.eval.infra.log_publisher - INFO - >Recall details
+plaseval.eval.infra.log_publisher - INFO - #Reference_plasmid	Unwtd_Recall	Unwtd_Predicted_bin	Wtd_Recall	Wtd_Predicted_bin
+plaseval.eval.infra.log_publisher - INFO - PD0	0.6667	PD0	0.7059	PD0
+plaseval.eval.infra.log_publisher - INFO - PD1	0.4	PD1	0.6667	PD1
+plaseval.eval.infra.log_publisher - INFO - 
+plaseval.eval.infra.log_publisher - INFO - #Final statistics (Unwtd and Wtd)
+plaseval.eval.infra.log_publisher - INFO - >Overall details
+plaseval.eval.infra.log_publisher - INFO - #Overall_statistic	Unwtd_statistic	Wtd_statistic
+plaseval.eval.infra.log_publisher - INFO - Precision	0.8571	0.9375
+plaseval.eval.infra.log_publisher - INFO - Recall	0.5	0.6897
+plaseval.eval.infra.log_publisher - INFO - F1	0.6316	0.7947
