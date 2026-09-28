@@ -39,9 +39,10 @@ from plaseval.cli import APP
 # ==================================================================================== #
 #                                     CONFIGURATION                                    #
 # ==================================================================================== #
-ARTIFACTS_ROOT = Path(__file__).parent / "artifacts"
-INPUT_DIR = ARTIFACTS_ROOT / "input"
-OUTPUT_DIR = ARTIFACTS_ROOT / "output"
+ARTIFACTS_ROOT = Path(__file__).parent.parent / "artifacts"
+COMP_ARTIFACTS = Path(__file__).parent / "artifacts"
+INPUT_DIR = ARTIFACTS_ROOT / "inputs"
+OUTPUT_DIR = COMP_ARTIFACTS / "outputs"
 
 PLASEVAL_BIN = os.environ.get("PLASEVAL_BIN", "plaseval")
 
@@ -70,6 +71,7 @@ NUMERIC_ABS_TOLERANCE = float(os.environ.get("PLASEVAL_NUMERIC_ABS_TOLERANCE", "
 TEST_CASES = [
     (0, 0, None),
     (0, 1, None),
+    (1, 0, None),
     (1, 1, None),
     (1, 1, 0),
     (1, 2, None),

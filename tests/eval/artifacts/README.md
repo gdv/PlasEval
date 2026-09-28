@@ -4,16 +4,15 @@ The folder `tests/artifacts/inputs` contains several "test" plasmid bins.
 Pairs of these test bins have been to compared against each other to test different functionalities of PlasEval.
 Given below is the list of comparisons made along with the significance of each comparison.
 
-| Prediction | Ground truth | Particularity                                          | Expected                                 |
-| ---------- | ------------ | ------------------------------------------------------ | ---------------------------------------- |
-| `0`        | `1`          | Empty prediction                                       | Missing cost 1 so dissimilarity score 1  |
-| `1`        | `0`          | Empty ground truth                                     | Extra cost 1 so dissimilarity score 1    |
-| `0`        | `0`          | Both collections are empty                             | Dissimilarity score 0                    |
-| `1`        | `1`          | Same bins                                              | Dissimilarity score 0                    |
-| `1`        | `1`          | Same bins with $\alpha = 0$                            | Dissimilarity score 0                    |
-| `2`        | `2`          | Same bins with copies                                  | Dissimilarity score 0                    |
-| `2`        | `2`          | Same bins with copies and $\alpha = 0$                 | Dissimilarity score 0                    |
-| `1`        | `2`          | Same bins with extra copies (in `2`)                   | Only positive missing cost               |
+| Prediction | Ground truth | Particularity                        | Expected                   |
+| ---------- | ------------ | ------------------------------------ | -------------------------- |
+| `0`        | `1`          | Empty prediction                     | Recall 0, prec 1 so F1 0   |
+| `1`        | `0`          | Empty ground truth                   | Recall 1, prec 0 so F1 0   |
+| `0`        | `0`          | Both collections are empty           | Recall 1, prec 1 so F1 1   |
+| `1`        | `1`          | Same bins                            | Recall 1, prec 1 so F1 1   |
+| `2`        | `2`          | Same bins with copies                | Recall 1, prec 1 so F1 1   |
+| `1`        | `2`          | Same bins with extra copies (in `2`) | Only positive missing cost |
+
 | `3`        | `4`          | Same bins with extra copies (in both)                  | Positive extra and missing costs         |
 | `1`        | `5`          | Same bins with extra copies *in the same bin* (in `5`) | Only positive extra cost                 |
 | `1`        | `6`          | Completely different bins                              | Dissimilarity score 1                    |
