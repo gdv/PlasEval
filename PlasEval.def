@@ -2,13 +2,14 @@ Bootstrap: docker
 From: python:3.13-slim
 
 %files
-    # Repo state relative to the directory you build from
-    . /tmp/PlasEval
+    # Repo state relative to the directory you build from.
+    # Do not use /tmp here: it is masked during %post.
+    . /opt/PlasEval
 
 %post
     set -eux
-    pip install --no-cache-dir /tmp/PlasEval
-    rm -rf /tmp/PlasEval
+    pip install --no-cache-dir /opt/PlasEval
+    rm -rf /opt/PlasEval
 
 %environment
     export LC_ALL=C
