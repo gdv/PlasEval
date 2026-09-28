@@ -93,7 +93,7 @@ Run with a bind mount, same pattern as Docker:
 
 ```sh
 apptainer run --bind examples:/data PlasEval.sif  \
-  plaseval eval \
+  eval \
     --pred /data/input/pred_bins.tsv \
     --gt /data/input/gt_bins.tsv \
     --out /data/output/P1G1_eval.tsv \
