@@ -342,7 +342,7 @@ Changes:
 [ci_badge]: https://img.shields.io/github/actions/workflow/status/gdv/PlasEval/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI "CI badge"
 [ci_link]: https://github.com/gdv/PlasEval/actions/workflows/ci.yml "CI link"
 
-[cov_badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2FREPO%2Fbadges%2Fcoverage.json&style=for-the-badge&logo=pytest&logoColor=white "Coverage badge"
+[cov_badge]: https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgdv%2FPlasEval%2Fbadges%2Fcoverage.json&style=for-the-badge&logo=pytest&logoColor=white "Coverage badge"
 [cov_link]: https://github.com/gdv/PlasEval/actions/workflows/ci.yml "Coverage link"
 
 [license_badge]: https://img.shields.io/github/license/gdv/PlasEval?style=for-the-badge&color=green "Licence badge"
